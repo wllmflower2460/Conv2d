@@ -1,15 +1,140 @@
-# Models Module Documentation
+# Model Components Documentation
 
-This module contains the core TCN-VAE model architecture and related components.
+This directory contains all model components for the Conv2d-VQ-HDP-HSMM architecture, implementing a unified framework for behavioral synchrony analysis.
 
-## Files Overview
+## 🏗️ Architecture Overview
 
-### `tcn_vae.py`
-The main model architecture file containing all neural network components.
+```
+┌─────────────────────────────────────────┐
+│         Conv2d-VQ-HDP-HSMM Model        │
+├─────────────────────────────────────────┤
+│ 1. Conv2d Encoder (Feature Extraction)  │
+│ 2. Vector Quantization (Discrete Codes) │
+│ 3. HDP Clustering (Behavioral Groups)   │
+│ 4. HSMM Dynamics (Temporal Modeling)    │
+│ 5. Entropy Module (Uncertainty)         │
+└─────────────────────────────────────────┘
+```
 
-#### Classes
+## 📁 File Structure
 
-##### `TemporalConvNet`
+### Core Components
+
+#### `vq_ema_2d.py` - Vector Quantization with EMA
+- **Purpose**: Learns discrete behavioral vocabulary
+- **Key Features**:
+  - EMA (Exponential Moving Average) codebook updates
+  - 512 codes × 64 dimensions default
+  - Straight-through estimator for gradients
+  - Hailo-safe implementation (no unsupported ops)
+- **Usage**:
+```python
+vq = VectorQuantizerEMA2D(num_codes=512, code_dim=64)
+z_q, loss_dict, info = vq(z_e)  # z_e: (B, D, H, T)
+```
+
+#### `hdp_components.py` - Hierarchical Dirichlet Process
+- **Purpose**: Automatic discovery of behavioral clusters
+- **Key Features**:
+  - Stick-breaking construction for non-parametric clustering
+  - Hierarchical HDP for two-level clustering
+  - Temperature annealing for stable training
+  - Gumbel-Softmax for differentiable assignments
+- **Components**:
+  - `StickBreaking`: Generates cluster weights
+  - `HDPLayer`: Single-level clustering
+  - `HierarchicalHDP`: Two-level hierarchical clustering
+- **Usage**:
+```python
+hdp = HDPLayer(input_dim=64, max_clusters=20)
+cluster_assignments, info = hdp(features)  # features: (B, T, D)
+```
+
+#### `hsmm_components.py` - Hidden Semi-Markov Model
+- **Purpose**: Models temporal dynamics with explicit duration
+- **Key Features**:
+  - Multiple duration distributions (negative binomial, Poisson, Gaussian)
+  - Forward-backward algorithm for inference
+  - Viterbi decoding for most likely path
+  - Input-dependent transition matrices
+- **Components**:
+  - `DurationModel`: Models state durations
+  - `HSMMTransitions`: State transition probabilities
+  - `HSMM`: Complete model with inference
+- **Usage**:
+```python
+hsmm = HSMM(num_states=10, observation_dim=64)
+state_probs, info = hsmm(observations, return_viterbi=True)
+```
+
+#### `entropy_uncertainty.py` - Uncertainty Quantification
+- **Purpose**: Quantifies model confidence for clinical deployment
+- **Key Features**:
+  - Shannon entropy for discrete distributions
+  - Circular statistics for phase analysis
+  - Mutual information I(Z;Φ) calculation
+  - Confidence calibration (ECE, Brier scores)
+  - Three-level confidence (high/medium/low)
+- **Components**:
+  - `EntropyUncertaintyModule`: Main uncertainty module
+  - `CircularStatistics`: Helper for phase analysis
+  - `summarize_window`: Quick analysis function
+- **Usage**:
+```python
+entropy_module = EntropyUncertaintyModule(num_states=10)
+uncertainty = entropy_module(state_posterior, phase_values)
+confidence_level = uncertainty['confidence_level']  # 'high', 'medium', or 'low'
+```
+
+### Integrated Models
+
+#### `conv2d_vq_model.py` - Conv2d-VQ Integration
+- **Purpose**: Combines Conv2d encoder with VQ layer
+- **Architecture**:
+  - Conv2d encoder: IMU → continuous features
+  - VQ layer: continuous → discrete codes
+  - Conv2d decoder: discrete → reconstruction
+  - Activity classifier head
+- **Model Size**: ~305K parameters
+- **Usage**:
+```python
+model = Conv2dVQModel(input_channels=9, input_height=2, num_codes=512)
+outputs = model(imu_data)  # imu_data: (B, 9, 2, 100)
+```
+
+#### `conv2d_vq_hdp_hsmm.py` - Complete Architecture
+- **Purpose**: Full integrated model with all components
+- **Architecture Flow**:
+  1. Conv2d Encoder → continuous features
+  2. VQ → discrete behavioral codes
+  3. HDP → automatic cluster discovery
+  4. HSMM → temporal dynamics
+  5. Entropy → uncertainty quantification
+- **Model Size**: 313K parameters
+- **Key Outputs**:
+  - Behavioral codes with perplexity
+  - Cluster assignments
+  - Temporal states with durations
+  - Confidence levels and intervals
+- **Usage**:
+```python
+model = Conv2dVQHDPHSMM(
+    input_channels=9,
+    num_codes=512,
+    max_clusters=20,
+    num_states=10
+)
+outputs = model(imu_data, return_all_stages=True)
+```
+
+### Legacy Models
+
+#### `tcn_vae.py` - Original TCN-VAE
+The original TCN-VAE implementation that achieved 78.12% accuracy on quadruped behavioral recognition.
+
+##### Classes
+
+###### `TemporalConvNet`
 Temporal Convolutional Network implementation with dilated convolutions.
 
 ```python
@@ -23,34 +148,7 @@ class TemporalConvNet(nn.Module):
 - `kernel_size` (int): Convolution kernel size (default: 3)
 - `dropout` (float): Dropout rate for regularization (default: 0.2)
 
-**Architecture:**
-- Multiple `TemporalBlock` layers with increasing dilation
-- Exponential dilation: 2^0, 2^1, 2^2, ... 
-- Residual connections for gradient flow
-
-##### `TemporalBlock`
-Individual temporal block with dilated convolutions and residual connections.
-
-```python
-class TemporalBlock(nn.Module):
-    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2)
-```
-
-**Components:**
-- Weight-normalized 1D convolutions
-- Chomp padding for causal convolutions
-- ReLU activations and dropout
-- Residual skip connections
-
-##### `Chomp1d`
-Removes padding to ensure causal convolutions (future information doesn't leak).
-
-```python
-class Chomp1d(nn.Module):
-    def __init__(self, chomp_size)
-```
-
-##### `TCNVAE` (Main Model)
+###### `TCNVAE` (Main Model)
 Complete TCN-VAE architecture combining encoder, decoder, and classification heads.
 
 ```python
@@ -59,15 +157,7 @@ class TCNVAE(nn.Module):
                  sequence_length=100, num_activities=12)
 ```
 
-**Parameters:**
-- `input_dim` (int): Input feature dimension (9 for 9-axis IMU)
-- `hidden_dims` (list): TCN hidden dimensions
-- `latent_dim` (int): Latent space dimension (64)
-- `sequence_length` (int): Input sequence length (100)
-- `num_activities` (int): Number of activity classes
-
 **Components:**
-
 1. **TCN Encoder**: Encodes temporal sequences to fixed-size representations
 2. **VAE Components**: 
    - `fc_mu`: Linear layer for mean vector
@@ -76,136 +166,79 @@ class TCNVAE(nn.Module):
 4. **Activity Classifier**: Supervised learning head for activity recognition
 5. **Domain Classifier**: Adversarial head for domain adaptation
 
-**Forward Pass:**
-```python
-def forward(self, x, alpha=1.0):
-    # Returns: x_recon, mu, logvar, activity_logits, domain_logits
+## 🚀 Quick Start
+
+### Test Individual Components
+```bash
+# Test VQ layer
+python models/vq_ema_2d.py
+
+# Test HDP clustering
+python models/hdp_components.py
+
+# Test HSMM dynamics
+python models/hsmm_components.py
+
+# Test entropy module
+python models/entropy_uncertainty.py
+
+# Test complete model
+python models/conv2d_vq_hdp_hsmm.py
 ```
 
-**Key Methods:**
+### Training Pipeline
+```bash
+# Train Conv2d-VQ model
+python training/train_conv2d_vq.py
 
-- `encode(x)`: Encodes input to latent distribution parameters
-- `reparameterize(mu, logvar)`: VAE reparameterization trick
-- `decode(z, sequence_length)`: Decodes latent codes to sequences
-
-##### `ReverseLayerF`
-Gradient reversal layer for adversarial domain adaptation.
-
-```python
-class ReverseLayerF(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x, alpha): # Forward pass unchanged
-    
-    @staticmethod  
-    def backward(ctx, grad_output): # Reverses gradients with scaling
+# Analyze learned codes
+python analysis/codebook_analysis.py
 ```
 
-## Model Architecture Flow
+## 📊 Key Metrics
 
-```
-Input [B, 100, 9] 
-    ↓
-TCN Encoder [B, 256]
-    ↓ 
-VAE Latent [B, 64] (mu, logvar)
-    ↓
-Reparameterize [B, 64] (z)
-    ↓
-┌─ TCN Decoder → Reconstruction [B, 100, 9]
-├─ Activity Classifier → Activity Logits [B, num_classes]  
-└─ Domain Classifier → Domain Logits [B, 3]
-```
+### VQ Layer
+- **Perplexity**: 100-150 (healthy codebook usage)
+- **Usage**: 40-55% of codes actively used
+- **Reconstruction**: Low MSE loss
 
-## Training Objectives
+### HDP Clustering
+- **Active Clusters**: 5-10 automatically discovered
+- **Entropy**: Measures cluster uncertainty
+- **Balance**: Even distribution across clusters
 
-The model optimizes multiple objectives simultaneously:
+### HSMM Dynamics
+- **State Duration**: Mean ~2-5 timesteps
+- **Transitions**: Realistic behavioral switches
+- **Viterbi Path**: Most likely state sequence
 
-1. **Reconstruction Loss**: MSE between input and reconstructed sequences
-2. **KL Divergence**: Regularizes latent space to unit Gaussian
-3. **Activity Classification**: Cross-entropy for supervised learning
-4. **Domain Classification**: Adversarial loss for domain invariance
+### Uncertainty
+- **Confidence Levels**: High (<0.3 entropy), Medium (0.3-0.6), Low (>0.6)
+- **Mutual Information**: I(Z;Φ) for synchrony coherence
+- **Calibration**: ECE and Brier scores for reliability
 
-## Model Checkpoints
+## 🔬 Research Significance
 
-### File Naming Convention
-- `best_tcn_vae.pth`: Best validation accuracy model
-- `best_overnight_tcn_vae.pth`: Best from overnight training (72.13%)
-- `final_tcn_vae.pth`: Final epoch model
-- `checkpoint_epoch_N.pth`: Periodic checkpoints
+This architecture represents the first implementation of:
+1. **Behavioral-Dynamical Coherence**: Mutual information I(Z;Φ) between discrete states and continuous phase
+2. **Unified Framework**: Bridging Feldman's discrete and Kelso's continuous models
+3. **Clinical Uncertainty**: Confidence-aware predictions for medical deployment
+4. **Cross-species Analysis**: Separate tracking of human and animal behaviors
 
-### Loading Models
-```python
-model = TCNVAE(input_dim=9, hidden_dims=[64, 128, 256], 
-               latent_dim=64, num_activities=13)
-model.load_state_dict(torch.load('models/best_overnight_tcn_vae.pth'))
-model.eval()
-```
+## 📚 References
 
-## Performance Characteristics
+- VQ-VAE: Van Den Oord et al. (2017) - Neural Discrete Representation Learning
+- HDP: Teh et al. (2006) - Hierarchical Dirichlet Processes  
+- HSMM: Yu (2010) - Hidden Semi-Markov Models
+- Behavioral Synchrony: Feldman (2007), Kelso (1995), Leclère (2014)
 
-### Model Size
-- **Parameters**: ~1.1M trainable parameters
-- **Memory**: ~50MB model size
-- **Latent Space**: 64-dimensional continuous representation
+## 🛠️ Development Notes
 
-### Inference Speed
-- **Forward Pass**: ~10ms on GPU (RTX 2060)
-- **Batch Processing**: ~100 sequences/second
-- **Edge Deployment**: <50ms on Hailo-8
+- All models support gradient flow for end-to-end training
+- Hailo-safe implementations avoid unsupported operations
+- Models can be used independently or in combination
+- Comprehensive test functions included in each file
 
-### Accuracy Breakdown
-- **Overall Validation**: 72.13%
-- **Cross-dataset Generalization**: Good domain adaptation
-- **Activity Recognition**: Strong performance on walking, running, sitting
+---
 
-## Usage Examples
-
-### Basic Inference
-```python
-import torch
-from models.tcn_vae import TCNVAE
-
-# Load model
-model = TCNVAE(input_dim=9, latent_dim=64, num_activities=13)
-model.load_state_dict(torch.load('best_overnight_tcn_vae.pth'))
-model.eval()
-
-# Inference
-with torch.no_grad():
-    imu_data = torch.randn(1, 100, 9)  # Batch of 1, 100 timesteps, 9 sensors
-    recon, mu, logvar, activity_logits, domain_logits = model(imu_data)
-    
-    predicted_activity = activity_logits.argmax(dim=1)
-    latent_embedding = mu  # Use mean for deterministic encoding
-```
-
-### Feature Extraction
-```python
-# Extract only latent features
-mu, logvar = model.encode(imu_data)
-features = mu  # 64-dimensional activity representation
-```
-
-### Activity Classification
-```python
-# Get activity probabilities
-activity_probs = torch.softmax(activity_logits, dim=1)
-confidence = activity_probs.max().item()
-```
-
-## Integration Notes
-
-### With EdgeInfer
-- Model encoder is exported to ONNX for edge deployment
-- Normalization must match training preprocessing exactly
-- Static input shapes required for Hailo-8 compilation
-
-### With Training Pipeline
-- Model supports progressive adversarial training
-- Loss weighting balances reconstruction vs classification
-- Compatible with cosine annealing learning rate schedules
-
-### With Evaluation
-- Model provides multiple outputs for comprehensive evaluation
-- Latent space can be visualized with t-SNE
-- Cross-dataset performance can be assessed via domain classification
+For detailed implementation documentation, see `IMPLEMENTATION_SUMMARY.md` in the project root.
