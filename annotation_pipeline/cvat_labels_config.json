@@ -1,0 +1,348 @@
+{
+  "name": "DataDogs Animal Pose Estimation",
+  "description": "Professional keypoint annotation for dog and cat pose estimation using iOS 17+ Vision framework joint mapping",
+  "format_version": "1.1",
+  "labels": [
+    {
+      "name": "dog_skeleton",
+      "id": 1,
+      "color": "#00ff00",
+      "type": "skeleton",
+      "sublabels": [
+        {
+          "name": "nose",
+          "id": 2,
+          "color": "#ff0000",
+          "attributes": [
+            {
+              "name": "visibility",
+              "input_type": "select",
+              "default_value": "visible",
+              "values": [
+                "visible",
+                "occluded",
+                "absent"
+              ]
+            },
+            {
+              "name": "confidence",
+              "input_type": "number",
+              "default_value": "1.0",
+              "values": [
+                "0.0",
+                "1.0"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "left_eye",
+          "id": 3,
+          "color": "#ff3300",
+          "attributes": [
+            {
+              "name": "visibility",
+              "input_type": "select",
+              "default_value": "visible",
+              "values": [
+                "visible",
+                "occluded",
+                "absent"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "right_eye",
+          "id": 4,
+          "color": "#ff6600",
+          "attributes": [
+            {
+              "name": "visibility",
+              "input_type": "select",
+              "default_value": "visible",
+              "values": [
+                "visible",
+                "occluded",
+                "absent"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "left_ear",
+          "id": 5,
+          "color": "#ff9900"
+        },
+        {
+          "name": "right_ear",
+          "id": 6,
+          "color": "#ffcc00"
+        },
+        {
+          "name": "neck",
+          "id": 7,
+          "color": "#ffff00"
+        },
+        {
+          "name": "left_front_shoulder",
+          "id": 8,
+          "color": "#00ff00"
+        },
+        {
+          "name": "left_front_elbow",
+          "id": 9,
+          "color": "#00ff44"
+        },
+        {
+          "name": "left_front_wrist",
+          "id": 10,
+          "color": "#00ff88"
+        },
+        {
+          "name": "left_front_paw",
+          "id": 11,
+          "color": "#00ffcc"
+        },
+        {
+          "name": "right_front_shoulder",
+          "id": 12,
+          "color": "#44ff00"
+        },
+        {
+          "name": "right_front_elbow",
+          "id": 13,
+          "color": "#88ff00"
+        },
+        {
+          "name": "right_front_wrist",
+          "id": 14,
+          "color": "#ccff00"
+        },
+        {
+          "name": "right_front_paw",
+          "id": 15,
+          "color": "#00ffff"
+        },
+        {
+          "name": "spine_mid",
+          "id": 16,
+          "color": "#00ccff"
+        },
+        {
+          "name": "left_hip",
+          "id": 17,
+          "color": "#0000ff"
+        },
+        {
+          "name": "left_back_elbow",
+          "id": 18,
+          "color": "#3333ff"
+        },
+        {
+          "name": "left_back_wrist",
+          "id": 19,
+          "color": "#6666ff"
+        },
+        {
+          "name": "left_back_paw",
+          "id": 20,
+          "color": "#9999ff"
+        },
+        {
+          "name": "right_hip",
+          "id": 21,
+          "color": "#6600ff"
+        },
+        {
+          "name": "right_back_elbow",
+          "id": 22,
+          "color": "#9900ff"
+        },
+        {
+          "name": "right_back_wrist",
+          "id": 23,
+          "color": "#cc00ff"
+        },
+        {
+          "name": "right_back_paw",
+          "id": 24,
+          "color": "#ff00ff"
+        },
+        {
+          "name": "tail_base",
+          "id": 25,
+          "color": "#0099ff"
+        },
+        {
+          "name": "tail_mid",
+          "id": 26,
+          "color": "#660000"
+        },
+        {
+          "name": "tail_tip",
+          "id": 27,
+          "color": "#330000"
+        }
+      ],
+      "svg": "<line x1=\"2\" y1=\"3\" x2=\"7\" y2=\"7\" />...",
+      "attributes": [
+        {
+          "name": "animal_type",
+          "input_type": "select",
+          "default_value": "dog",
+          "values": [
+            "dog",
+            "cat"
+          ]
+        },
+        {
+          "name": "breed_size",
+          "input_type": "select",
+          "default_value": "medium",
+          "values": [
+            "small",
+            "medium",
+            "large",
+            "giant"
+          ]
+        },
+        {
+          "name": "pose_quality",
+          "input_type": "select",
+          "default_value": "good",
+          "values": [
+            "excellent",
+            "good",
+            "fair",
+            "poor"
+          ]
+        },
+        {
+          "name": "activity_type",
+          "input_type": "select",
+          "default_value": "standing",
+          "values": [
+            "standing",
+            "sitting",
+            "lying",
+            "walking",
+            "running",
+            "playing",
+            "other"
+          ]
+        }
+      ]
+    }
+  ],
+  "skeleton": {
+    "connections": [
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        2,
+        7
+      ],
+      [
+        7,
+        16
+      ],
+      [
+        7,
+        8
+      ],
+      [
+        8,
+        9
+      ],
+      [
+        9,
+        10
+      ],
+      [
+        10,
+        11
+      ],
+      [
+        7,
+        12
+      ],
+      [
+        12,
+        13
+      ],
+      [
+        13,
+        14
+      ],
+      [
+        14,
+        15
+      ],
+      [
+        16,
+        17
+      ],
+      [
+        17,
+        18
+      ],
+      [
+        18,
+        19
+      ],
+      [
+        19,
+        20
+      ],
+      [
+        16,
+        21
+      ],
+      [
+        21,
+        22
+      ],
+      [
+        22,
+        23
+      ],
+      [
+        23,
+        24
+      ],
+      [
+        16,
+        25
+      ],
+      [
+        25,
+        26
+      ],
+      [
+        26,
+        27
+      ]
+    ]
+  },
+  "annotation_guidelines": {
+    "keypoint_placement": "Place keypoints at anatomical landmarks, not surface features",
+    "occlusion_handling": "Mark occluded joints with 'occluded' visibility",
+    "quality_standards": "Ensure sub-pixel accuracy for visible joints",
+    "edge_cases": "If uncertain about joint location, mark as 'occluded' rather than guess"
+  }
+}

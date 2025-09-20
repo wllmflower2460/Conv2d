@@ -1,0 +1,359 @@
+# Enhanced YAML Schema for Cross-Species Transfer Learning
+# Supports Hailo-8 deployment with phone+IMU dual-device processing
+
+dataset_metadata:
+  name: PAMAP2_CrossSpecies_Enhanced
+  version: 3.0.0
+  created: 2025-09-08
+  description: Enhanced dataset configuration for cross-species behavioral analysis
+  
+  # Species information
+  source_species: human
+  target_species: dog
+  
+  # Data collection configuration
+  collection_devices:
+    - device_id: phone
+      type: smartphone
+      placement: pocket
+      sensors:
+        - accelerometer
+        - gyroscope  
+        - magnetometer
+      sampling_rate: 100  # Hz
+      channels: 9  # 3 axes × 3 sensors
+      
+    - device_id: imu
+      type: IMU_sensor
+      placement: chest  # Human chest → Dog collar mapping
+      sensors:
+        - accelerometer
+        - gyroscope
+        - magnetometer
+      sampling_rate: 100  # Hz
+      channels: 9  # 3 axes × 3 sensors
+
+# Cross-species behavioral mapping
+cross_species_mapping:
+  mapping_confidence_threshold: 0.85
+  
+  behavioral_correspondences:
+    # High confidence mappings (>0.9)
+    - source_activity: sitting
+      target_behavior: sit
+      confidence: 0.95
+      anatomical_notes: "Human sitting posture directly maps to dog sit command"
+      sensor_correlation: high
+      
+    - source_activity: lying
+      target_behavior: down
+      confidence: 0.92
+      anatomical_notes: "Prone/supine position maps to dog down command"
+      sensor_correlation: high
+      
+    - source_activity: standing
+      target_behavior: stand
+      confidence: 0.95
+      anatomical_notes: "Upright posture with species-specific adjustments"
+      sensor_correlation: high
+      
+    # Medium confidence mappings (0.7-0.9)
+    - source_activity: walking
+      target_behavior: walk
+      confidence: 0.85
+      anatomical_notes: "Bipedal to quadrupedal gait translation"
+      sensor_correlation: medium
+      
+    - source_activity: running
+      target_behavior: run
+      confidence: 0.80
+      anatomical_notes: "Higher frequency patterns, different limb coordination"
+      sensor_correlation: medium
+      
+    # Activity groups for multi-task learning
+  activity_groups:
+    static_postures: [sitting, lying, standing]
+    dynamic_movements: [walking, running, ascending_stairs, descending_stairs]
+    transitions: [sit_to_stand, stand_to_sit, lie_to_sit]
+
+# Hailo-8 deployment configuration
+hailo_deployment:
+  target_hardware: hailo8
+  hardware_version: "8L"
+  
+  # Model architecture constraints
+  architecture_constraints:
+    conv_type: Conv2d  # No Conv1d support
+    groups: 1  # No grouped/depthwise convolutions
+    supported_activations: [ReLU, LeakyReLU, Sigmoid, Tanh]
+    unsupported_ops: [Conv1d, ConvTranspose1d, GRU, LSTM, DynamicShape]
+    
+  # Input/output specifications
+  io_specification:
+    input_shape: [1, 9, 2, 100]  # [Batch, Channels, Devices, Time]
+    input_dtype: float32
+    output_shape: [1, 3]  # 3 dog behaviors
+    output_dtype: float32
+    static_shape_required: true
+    
+  # Quantization configuration
+  quantization:
+    method: INT8
+    calibration_dataset_size: 1000
+    calibration_method: percentile
+    percentile: 99.9
+    per_channel_quantization: true
+    accuracy_threshold: 0.85  # Minimum accuracy after quantization
+    
+  # Performance requirements
+  performance_targets:
+    inference_latency_ms: 50
+    inference_latency_p95_ms: 60
+    throughput_fps: 20
+    power_consumption_w: 2.5
+    memory_footprint_mb: 100
+    
+  # Compilation settings
+  compilation:
+    optimization_level: 2  # 0=size, 1=balanced, 2=latency
+    batch_size: 1
+    enable_profiling: true
+    output_format: hef
+
+# Commercial validation requirements
+commercial_validation:
+  # Professional trainer requirements
+  trainer_requirements:
+    min_accuracy: 0.90
+    min_f1_score: 0.85
+    min_precision: 0.88
+    min_recall: 0.87
+    max_latency_ms: 50
+    
+    # Supported behaviors for initial release
+    supported_behaviors:
+      - sit
+      - down
+      - stand
+    
+    # Planned behaviors for future releases
+    future_behaviors:
+      - stay
+      - come
+      - heel
+      - place
+      
+  # Validation protocol
+  validation_protocol:
+    # Test subject requirements
+    test_subjects:
+      min_dogs: 30
+      breeds:
+        - labrador_retriever
+        - german_shepherd
+        - golden_retriever
+        - border_collie
+        - australian_shepherd
+      age_range: [1, 8]  # years
+      weight_range: [20, 40]  # kg
+      
+    # Testing environments
+    environments:
+      - indoor_home
+      - indoor_training_facility
+      - outdoor_park
+      - outdoor_training_field
+      
+    # Data collection protocol
+    collection_protocol:
+      sessions_per_dog: 3
+      behaviors_per_session: 20
+      rest_between_behaviors: 30  # seconds
+      trainer_experience: professional  # professional/experienced/novice
+      
+    # Success criteria
+    success_criteria:
+      per_dog_accuracy: 0.85  # Minimum per individual
+      overall_accuracy: 0.90  # Across all dogs
+      breed_consistency: 0.05  # Max accuracy variance between breeds
+
+# Data pipeline configuration
+data_pipeline:
+  # Preprocessing steps
+  preprocessing:
+    - step: synchronization
+      method: timestamp_interpolation
+      max_delay_ms: 10
+      
+    - step: normalization
+      method: standardization
+      per_channel: true
+      per_device: true
+      
+    - step: windowing
+      window_size: 100
+      stride: 50
+      padding: reflect
+      
+    - step: augmentation
+      enabled: true
+      techniques:
+        time_warping:
+          enabled: true
+          sigma: 0.2
+          knots: 4
+        magnitude_warping:
+          enabled: true
+          sigma: 0.2
+          knots: 4
+        jittering:
+          enabled: true
+          sigma: 0.05
+        rotation:
+          enabled: false  # Not applicable for IMU
+        permutation:
+          enabled: true
+          segments: 5
+          
+  # Device-specific processing
+  device_processing:
+    phone:
+      noise_filtering: true
+      gravity_removal: true
+      coordinate_transformation: body_frame
+      
+    imu:
+      noise_filtering: true
+      gravity_removal: false  # Keep for posture detection
+      coordinate_transformation: body_frame
+      
+  # Cross-species alignment
+  alignment:
+    method: dtw  # Dynamic Time Warping
+    window_constraint: 10
+    distance_metric: euclidean
+    
+  # Train/validation/test split
+  data_split:
+    train: 0.70
+    validation: 0.15
+    test: 0.15
+    stratify_by:
+      - activity
+      - subject
+      - species
+    ensure_subject_separation: true  # No subject in multiple splits
+
+# Training configuration
+training_config:
+  # Multi-task learning weights
+  loss_weights:
+    reconstruction: 1.0
+    kl_divergence: 0.5
+    human_classification: 1.0
+    dog_classification: 2.0  # Higher weight for target task
+    domain_adversarial: 0.1
+    
+  # Optimization
+  optimizer:
+    type: AdamW
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    betas: [0.9, 0.999]
+    
+  # Learning rate schedule
+  scheduler:
+    type: CosineAnnealingWarmRestarts
+    T_0: 10
+    T_mult: 2
+    eta_min: 0.00001
+    
+  # Training parameters
+  batch_size: 32
+  epochs: 100
+  early_stopping_patience: 15
+  gradient_clip_norm: 1.0
+  
+  # Cross-species curriculum
+  curriculum:
+    - phase: human_pretraining
+      epochs: 30
+      freeze_dog_head: true
+      
+    - phase: joint_training
+      epochs: 50
+      freeze_dog_head: false
+      
+    - phase: dog_finetuning
+      epochs: 20
+      freeze_human_head: true
+
+# Evaluation metrics
+evaluation_metrics:
+  # Classification metrics
+  classification:
+    - accuracy
+    - precision
+    - recall
+    - f1_score
+    - confusion_matrix
+    - per_class_metrics
+    
+  # Cross-species metrics
+  cross_species:
+    - transfer_efficiency  # Improvement over random baseline
+    - domain_adaptation_score
+    - behavioral_consistency
+    
+  # Temporal metrics
+  temporal:
+    - transition_accuracy
+    - temporal_consistency
+    - latency_distribution
+    
+  # Device attention metrics
+  device_attention:
+    - attention_entropy
+    - device_contribution_ratio
+    - activity_specific_weighting
+
+# Export configuration
+export_config:
+  # Model export settings
+  onnx:
+    opset_version: 11
+    dynamic_axes: null  # Static shapes for Hailo
+    optimization: true
+    simplification: true
+    
+  # Hailo compilation
+  hailo:
+    model_name: tcn_vae_cross_species
+    version: "1.0.0"
+    metadata:
+      author: "DataDogs Team"
+      description: "Cross-species behavioral analysis model"
+      license: "Proprietary"
+      
+# Logging and monitoring
+logging:
+  level: INFO
+  wandb:
+    enabled: true
+    project: datadogs-cross-species
+    tags:
+      - hailo
+      - phone-imu
+      - cross-species
+      - tcn-vae
+  
+  tensorboard:
+    enabled: true
+    log_dir: ./logs/tensorboard
+    
+  checkpointing:
+    enabled: true
+    save_best: true
+    save_last: true
+    monitor_metric: val_dog_accuracy
+    mode: max

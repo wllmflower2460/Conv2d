@@ -1,0 +1,28 @@
+[project]
+name = "tcn-vae-oks"
+version = "0.1.0"
+description = "OKS evaluation scaffold for Stanford Dogs + StanfordExtra within tcn-vae-training-pipeline"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "opencv-python",
+    "pillow",
+    "tqdm",
+    "click",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "mypy", "types-Pillow", "types-tqdm", "types-PyYAML"]
+
+[project.scripts]
+tcn-vae = "cli.eval_oks:main"
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+strict = false

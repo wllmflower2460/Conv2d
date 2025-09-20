@@ -1,0 +1,541 @@
+[
+  {
+    "name": "nose",
+    "id": 376,
+    "color": "#ff0000",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 221,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "left_eye",
+    "id": 377,
+    "color": "#ff3300",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 222,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "right_eye",
+    "id": 378,
+    "color": "#ff6600",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 223,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "left_ear",
+    "id": 379,
+    "color": "#ff9900",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 224,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "right_ear",
+    "id": 380,
+    "color": "#ffcc00",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 225,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "throat",
+    "id": 381,
+    "color": "#ffff00",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 226,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "withers",
+    "id": 382,
+    "color": "#ccff00",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 227,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "left_front_shoulder",
+    "id": 383,
+    "color": "#99ff00",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 228,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "left_front_elbow",
+    "id": 384,
+    "color": "#66ff00",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 229,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "left_front_paw",
+    "id": 385,
+    "color": "#33ff00",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 230,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "right_front_shoulder",
+    "id": 386,
+    "color": "#00ff00",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 231,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "right_front_elbow",
+    "id": 387,
+    "color": "#00ff33",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 232,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "right_front_paw",
+    "id": 388,
+    "color": "#00ff66",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 233,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "center",
+    "id": 389,
+    "color": "#00ff99",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 234,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "left_hip",
+    "id": 390,
+    "color": "#00ffcc",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 235,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "left_knee",
+    "id": 391,
+    "color": "#00ffff",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 236,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "left_back_paw",
+    "id": 392,
+    "color": "#00ccff",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 237,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "right_hip",
+    "id": 393,
+    "color": "#0099ff",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 238,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "right_knee",
+    "id": 394,
+    "color": "#0066ff",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 239,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "right_back_paw",
+    "id": 395,
+    "color": "#0033ff",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 240,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "tail_base",
+    "id": 396,
+    "color": "#0000ff",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 241,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "tail_mid_1",
+    "id": 397,
+    "color": "#3300ff",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 242,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "tail_mid_2",
+    "id": 398,
+    "color": "#6600ff",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 243,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "tail_tip",
+    "id": 399,
+    "color": "#9900ff",
+    "type": "points",
+    "attributes": [
+      {
+        "id": 244,
+        "name": "visibility",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "visible",
+          "occluded",
+          "absent"
+        ],
+        "default_value": "visible"
+      }
+    ]
+  },
+  {
+    "name": "dog_bbox",
+    "id": 400,
+    "color": "#ffffff",
+    "type": "rectangle",
+    "attributes": [
+      {
+        "id": 245,
+        "name": "breed_size",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "small",
+          "medium",
+          "large",
+          "giant"
+        ],
+        "default_value": "medium"
+      },
+      {
+        "id": 246,
+        "name": "pose_type",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "standing",
+          "sitting",
+          "lying",
+          "walking",
+          "running",
+          "jumping",
+          "playing"
+        ],
+        "default_value": "standing"
+      },
+      {
+        "id": 247,
+        "name": "difficult",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "yes",
+          "no"
+        ],
+        "default_value": "no"
+      },
+      {
+        "id": 248,
+        "name": "crowd",
+        "input_type": "select",
+        "mutable": true,
+        "values": [
+          "yes",
+          "no"
+        ],
+        "default_value": "no"
+      }
+    ]
+  }
+]

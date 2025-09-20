@@ -1,0 +1,79 @@
+{
+  "model_info": {
+    "name": "DogBehaviorClassifier",
+    "version": "1.0",
+    "description": "24-point dog pose to behavior classification",
+    "trained_on": "Stanford Dogs Dataset",
+    "accuracy": "94.46%"
+  },
+  "input": {
+    "format": "pose_sequence",
+    "shape": [
+      1,
+      48,
+      100
+    ],
+    "description": "24 keypoints (x,y) over 100 frames",
+    "keypoints": [
+      "nose",
+      "left_eye",
+      "right_eye",
+      "left_ear",
+      "right_ear",
+      "throat",
+      "withers",
+      "left_front_shoulder",
+      "left_front_elbow",
+      "left_front_paw",
+      "right_front_shoulder",
+      "right_front_elbow",
+      "right_front_paw",
+      "center",
+      "left_hip",
+      "left_knee",
+      "left_back_paw",
+      "right_hip",
+      "right_knee",
+      "right_back_paw",
+      "tail_base",
+      "tail_mid_1",
+      "tail_mid_2",
+      "tail_tip"
+    ]
+  },
+  "output": {
+    "format": "behavior_probs",
+    "shape": [
+      1,
+      21
+    ],
+    "classes": [
+      "sit",
+      "down",
+      "stand",
+      "stay",
+      "lying",
+      "heel",
+      "come",
+      "fetch",
+      "drop",
+      "wait",
+      "leave_it",
+      "walking",
+      "trotting",
+      "running",
+      "jumping",
+      "spinning",
+      "rolling",
+      "playing",
+      "alert",
+      "sniffing",
+      "looking"
+    ]
+  },
+  "conversion_instructions": {
+    "coreml": "Use coremltools on macOS: coremltools.convert(onnx_model, convert_to='mlprogram')",
+    "ios_deployment": "Minimum iOS 14.0, recommended iOS 15.0+",
+    "preprocessing": "Normalize keypoints to [0,1] range based on image dimensions"
+  }
+}

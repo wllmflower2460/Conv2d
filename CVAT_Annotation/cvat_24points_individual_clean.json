@@ -1,0 +1,338 @@
+[
+  {
+    "name": "nose",
+    "color": "#ff0000",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "left_eye",
+    "color": "#ff3300",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "right_eye",
+    "color": "#ff6600",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "left_ear",
+    "color": "#ff9900",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "right_ear",
+    "color": "#ffcc00",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "throat",
+    "color": "#ffff00",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "withers",
+    "color": "#ccff00",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "left_front_shoulder",
+    "color": "#99ff00",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "left_front_elbow",
+    "color": "#66ff00",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "left_front_paw",
+    "color": "#33ff00",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "right_front_shoulder",
+    "color": "#00ff00",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "right_front_elbow",
+    "color": "#00ff33",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "right_front_paw",
+    "color": "#00ff66",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "center",
+    "color": "#00ff99",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "left_hip",
+    "color": "#00ffcc",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "left_knee",
+    "color": "#00ffff",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "left_back_paw",
+    "color": "#00ccff",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "right_hip",
+    "color": "#0099ff",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "right_knee",
+    "color": "#0066ff",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "right_back_paw",
+    "color": "#0033ff",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "tail_base",
+    "color": "#0000ff",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "tail_mid_1",
+    "color": "#3300ff",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "tail_mid_2",
+    "color": "#6600ff",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  },
+  {
+    "name": "tail_tip",
+    "color": "#9900ff",
+    "type": "points",
+    "attributes": [
+      {
+        "name": "visibility",
+        "input_type": "select",
+        "default_value": "visible",
+        "values": ["visible", "occluded", "absent"],
+        "mutable": true
+      }
+    ]
+  }
+]

@@ -1,0 +1,78 @@
+{
+  "export_info": {
+    "timestamp": "2025-09-05T01:12:52.948266Z",
+    "model_accuracy": "72.13%",
+    "improvement": "+25.1% over baseline",
+    "export_version": "1.0.0"
+  },
+  "model_specs": {
+    "input_shape": [
+      1,
+      100,
+      9
+    ],
+    "output_shape": [
+      1,
+      64
+    ],
+    "input_format": "normalized_imu_window",
+    "output_format": "latent_embeddings",
+    "sequence_length": 100,
+    "latent_dimension": 64
+  },
+  "normalization": {
+    "method": "z_score_per_channel",
+    "mean": [
+      0.11999999731779099,
+      -0.07999999821186066,
+      9.779999732971191,
+      0.0020000000949949026,
+      -0.0010000000474974513,
+      0.003000000026077032,
+      22.399999618530273,
+      -8.699999809265137,
+      43.20000076293945
+    ],
+    "std": [
+      3.9200000762939453,
+      3.869999885559082,
+      2.450000047683716,
+      1.2400000095367432,
+      1.309999942779541,
+      0.9800000190734863,
+      28.5,
+      31.200000762939453,
+      24.799999237060547
+    ],
+    "channel_order": [
+      "ax",
+      "ay",
+      "az",
+      "gx",
+      "gy",
+      "gz",
+      "mx",
+      "my",
+      "mz"
+    ]
+  },
+  "deployment": {
+    "target_platform": "raspberry_pi_5_hailo_8",
+    "performance_requirements": {
+      "latency_p95_ms": 50,
+      "throughput_req_sec": 250,
+      "memory_mb": 512
+    },
+    "next_steps": [
+      "Copy to hailo_pipeline/models/",
+      "Run Hailo DFC compilation",
+      "Deploy to EdgeInfer sidecar",
+      "Validate performance benchmarks"
+    ]
+  },
+  "files": {
+    "onnx_model": "tcn_encoder_for_edgeinfer.onnx",
+    "pytorch_checkpoint": "best_overnight_tcn_vae.pth",
+    "size_mb": 1.7
+  }
+}

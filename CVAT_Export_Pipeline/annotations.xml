@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="utf-8"?>
+<annotations>
+  <version>1.1</version>
+  <meta>
+    <job>
+      <id>10</id>
+      <size>1</size>
+      <mode>annotation</mode>
+      <overlap>0</overlap>
+      <bugtracker></bugtracker>
+      <created>2025-09-12 21:06:51.553932+00:00</created>
+      <updated>2025-09-13 03:40:55.452314+00:00</updated>
+      <subset>Train</subset>
+      <start_frame>0</start_frame>
+      <stop_frame>0</stop_frame>
+      <frame_filter></frame_filter>
+      <segments>
+        <segment>
+          <id>10</id>
+          <start>0</start>
+          <stop>0</stop>
+          <url>http://100.97.130.8:8080/api/jobs/10</url>
+        </segment>
+      </segments>
+      <owner>
+        <username>django</username>
+        <email>flower.mobile@gmail.com</email>
+      </owner>
+      <assignee></assignee>
+      <labels>
+        <label>
+          <name>nose</name>
+          <color>#ff0000</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>left_eye</name>
+          <color>#ff3300</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>right_eye</name>
+          <color>#ff6600</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>left_ear</name>
+          <color>#ff9900</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>right_ear</name>
+          <color>#ffcc00</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>throat</name>
+          <color>#ffff00</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>withers</name>
+          <color>#ccff00</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>left_front_shoulder</name>
+          <color>#99ff00</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>left_front_elbow</name>
+          <color>#66ff00</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>left_front_paw</name>
+          <color>#33ff00</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>right_front_shoulder</name>
+          <color>#00ff00</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>right_front_elbow</name>
+          <color>#00ff33</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>right_front_paw</name>
+          <color>#00ff66</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>center</name>
+          <color>#00ff99</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>left_hip</name>
+          <color>#00ffcc</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>left_knee</name>
+          <color>#00ffff</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>left_back_paw</name>
+          <color>#00ccff</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>right_hip</name>
+          <color>#0099ff</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>right_knee</name>
+          <color>#0066ff</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>right_back_paw</name>
+          <color>#0033ff</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>tail_base</name>
+          <color>#0000ff</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>tail_mid_1</name>
+          <color>#3300ff</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>tail_mid_2</name>
+          <color>#6600ff</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>tail_tip</name>
+          <color>#9900ff</color>
+          <type>points</type>
+          <attributes>
+            <attribute>
+              <name>visibility</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>visible</default_value>
+              <values>visible
+occluded
+absent</values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>dog_bbox</name>
+          <color>#ffffff</color>
+          <type>rectangle</type>
+          <attributes>
+            <attribute>
+              <name>breed_size</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>medium</default_value>
+              <values>small
+medium
+large
+giant</values>
+            </attribute>
+            <attribute>
+              <name>pose_type</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>standing</default_value>
+              <values>standing
+sitting
+lying
+walking
+running
+jumping
+playing</values>
+            </attribute>
+            <attribute>
+              <name>difficult</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>no</default_value>
+              <values>yes
+no</values>
+            </attribute>
+            <attribute>
+              <name>crowd</name>
+              <mutable>True</mutable>
+              <input_type>select</input_type>
+              <default_value>no</default_value>
+              <values>yes
+no</values>
+            </attribute>
+          </attributes>
+        </label>
+      </labels>
+    </job>
+    <dumped>2025-09-13 03:43:56.852695+00:00</dumped>
+  </meta>
+  <image id="0" name="6E7DE357-44B4-430F-A242-FF3F0ADD285A_4_5005_c.jpeg" width="480" height="360">
+    <points label="right_eye" source="manual" occluded="0" points="390.01,149.79" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="nose" source="manual" occluded="0" points="398.72,164.44" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="right_ear" source="manual" occluded="0" points="372.15,137.42" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="throat" source="manual" occluded="0" points="346.05,162.15" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="withers" source="manual" occluded="0" points="290.50,127.10" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="right_front_shoulder" source="manual" occluded="0" points="325.50,155.50" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="right_front_elbow" source="manual" occluded="0" points="319.02,203.37" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="right_front_paw" source="manual" occluded="0" points="344.21,242.30" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="center" source="manual" occluded="0" points="254.80,153.10" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="right_hip" source="manual" occluded="0" points="185.74,141.54" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="right_knee" source="manual" occluded="0" points="209.20,190.60" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="right_back_paw" source="manual" occluded="0" points="210.47,243.22" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="left_back_paw" source="manual" occluded="0" points="167.42,221.24" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="left_front_paw" source="manual" occluded="0" points="250.78,229.48" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="tail_base" source="manual" occluded="0" points="168.79,134.67" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="tail_mid_1" source="manual" occluded="0" points="136.73,154.37" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="tail_mid_2" source="manual" occluded="0" points="110.63,144.29" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <points label="tail_tip" source="manual" occluded="0" points="78.56,125.97" z_order="0">
+      <attribute name="visibility">visible</attribute>
+    </points>
+    <box label="dog_bbox" source="manual" occluded="0" xtl="65.43" ytl="108.33" xbr="406.07" ybr="255.00" z_order="0">
+      <attribute name="breed_size">medium</attribute>
+      <attribute name="pose_type">standing</attribute>
+      <attribute name="difficult">no</attribute>
+      <attribute name="crowd">no</attribute>
+    </box>
+  </image>
+</annotations>
