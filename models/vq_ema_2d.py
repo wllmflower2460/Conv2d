@@ -34,7 +34,9 @@ class VectorQuantizerEMA2D(nn.Module):
         decay: float = 0.99,
         epsilon: float = 1e-5,
         commitment_cost: float = 0.25,
-        init_scale: float = 1.0
+        init_scale: float = 1.0,
+        dead_code_threshold: int = 100,
+        enable_dead_code_refresh: bool = False
     ):
         super().__init__()
         self.num_codes = num_codes
@@ -42,6 +44,8 @@ class VectorQuantizerEMA2D(nn.Module):
         self.decay = decay
         self.epsilon = epsilon
         self.beta = commitment_cost
+        self.dead_code_threshold = dead_code_threshold
+        self.enable_dead_code_refresh = enable_dead_code_refresh
 
         # Codebook: (num_codes, code_dim)
         embed = torch.randn(num_codes, code_dim)
@@ -54,6 +58,10 @@ class VectorQuantizerEMA2D(nn.Module):
 
         # For numerical stability in cluster size debiasing
         self.register_buffer("steps", torch.zeros((), dtype=torch.long))
+        
+        # Track code usage for dead code detection
+        self.register_buffer("code_usage_count", torch.zeros(num_codes))
+        self.register_buffer("total_usage_updates", torch.zeros((), dtype=torch.long))
 
     @torch.no_grad()
     def _ema_update(self, flat_z_e: torch.Tensor, onehot: torch.Tensor):
@@ -144,6 +152,32 @@ class VectorQuantizerEMA2D(nn.Module):
 
             # Code utilization: fraction of codes used in this batch
             usage = (avg_probs > 0).float().mean()
+            
+            # Track which codes are used
+            unique_codes = torch.unique(indices)
+            active_codes = len(unique_codes)
+            
+            # Update usage counts
+            if self.training:
+                self.total_usage_updates += 1
+                for code_idx in unique_codes:
+                    self.code_usage_count[code_idx] += 1
+                
+                # Dead code refresh (optional)
+                if self.enable_dead_code_refresh and self.total_usage_updates % self.dead_code_threshold == 0:
+                    # Find codes that haven't been used recently
+                    dead_codes = (self.code_usage_count == 0).nonzero(as_tuple=True)[0]
+                    if len(dead_codes) > 0:
+                        # Refresh dead codes with random samples from current batch
+                        n_refresh = min(len(dead_codes), flat_z_e.shape[0])
+                        random_indices = torch.randperm(flat_z_e.shape[0])[:n_refresh]
+                        self.embedding[dead_codes[:n_refresh]] = flat_z_e[random_indices].detach()
+                        # Reset their usage counts
+                        self.code_usage_count[dead_codes[:n_refresh]] = 1
+                    
+                    # Reset usage counts every threshold steps to track recent usage
+                    if self.total_usage_updates % (self.dead_code_threshold * 10) == 0:
+                        self.code_usage_count.fill_(0)
 
             # EMA update during training only
             if self.training:
@@ -154,7 +188,11 @@ class VectorQuantizerEMA2D(nn.Module):
         info = {
             "indices": indices.view(B, H, T),
             "perplexity": perplexity.detach(),
-            "usage": usage.detach()
+            "usage": usage.detach(),
+            "active_codes": active_codes,
+            "code_histogram": avg_probs.detach(),
+            "dead_codes": (self.code_usage_count == 0).sum().item(),
+            "entropy": entropy.detach()
         }
         loss_dict = {"commitment": commitment_loss, "codebook": codebook_loss, "vq": loss}
         return z_q_st, loss_dict, info

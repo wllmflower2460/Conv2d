@@ -1,0 +1,144 @@
+# Conv2d-VQ-HDP-HSMM Model Configuration
+# This config file exposes all key hyperparameters for easy sweeps
+
+# Model Architecture
+model:
+  name: "Conv2d-VQ-HDP-HSMM"
+  input_channels: 9  # 9-axis IMU
+  input_height: 2    # Human + Dog devices
+  sequence_length: 100  # ~1 second at 100Hz
+
+# Vector Quantization (VQ) Configuration
+vq:
+  num_codes: 512        # Codebook size (behavioral vocabulary)
+  code_dim: 64          # Dimension of each code vector
+  commitment_cost: 0.25 # Balance between encoder and codebook loss
+  ema_decay: 0.99       # Exponential moving average decay for codebook updates
+  epsilon: 1e-5         # Numerical stability
+  
+  # Dead code refresh (optional)
+  dead_code_threshold: 100  # Steps before considering a code "dead"
+  dead_code_refresh: true   # Enable automatic dead code replacement
+  
+  # Metrics monitoring
+  track_perplexity: true    # Monitor codebook usage diversity
+  track_usage: true         # Track which codes are being used
+  usage_threshold: 0.01     # Minimum usage rate to consider "active"
+
+# HDP Clustering Configuration  
+hdp:
+  max_clusters: 20          # Maximum number of behavioral clusters
+  concentration: 1.0        # Concentration parameter (alpha)
+  base_concentration: 0.1   # Base distribution concentration
+  temperature: 1.0          # Gumbel-Softmax temperature
+  temperature_anneal_rate: 0.995  # Temperature annealing per epoch
+  min_temperature: 0.1      # Minimum temperature after annealing
+  hierarchical: true        # Use hierarchical HDP
+
+# HSMM Temporal Dynamics Configuration
+hsmm:
+  num_states: 10            # Number of hidden states
+  duration_type: "negative_binomial"  # Options: negative_binomial, poisson, gaussian
+  max_duration: 20          # Maximum state duration
+  min_duration: 1           # Minimum state duration
+  input_dependent: true     # Use input-dependent transitions
+  transition_hidden_dim: 64 # Hidden dimension for transition network
+
+# Entropy & Uncertainty Configuration
+entropy:
+  num_phase_bins: 12        # Phase discretization bins
+  use_circular_stats: true  # Enable circular statistics
+  confidence_thresholds:
+    high: 0.3              # Entropy < 0.3 = high confidence
+    medium: 0.6            # 0.3 <= entropy < 0.6 = medium confidence
+    # entropy >= 0.6 = low confidence
+  calibration:
+    compute_ece: true      # Expected Calibration Error
+    compute_brier: true    # Brier score
+    num_bins: 10           # Calibration bins
+
+# Training Configuration
+training:
+  batch_size: 32
+  learning_rate: 1e-3
+  epochs: 200
+  gradient_clip: 1.0
+  
+  # Loss weights
+  loss_weights:
+    reconstruction: 1.0     # Reconstruction loss weight
+    vq: 1.0                # VQ commitment loss weight
+    activity: 0.5          # Activity classification weight
+    synchrony: 0.3         # Synchrony prediction weight
+    entropy_regularization: 0.01  # Entropy regularization
+  
+  # Learning rate scheduling
+  scheduler:
+    type: "cosine"         # Options: cosine, step, exponential
+    warmup_epochs: 10      # Warmup period
+    min_lr: 1e-5          # Minimum learning rate
+  
+  # Optimization
+  optimizer: "adam"        # Options: adam, adamw, sgd
+  weight_decay: 1e-4      # L2 regularization
+
+# Data Configuration
+data:
+  dataset_path: "./datasets/"
+  window_size: 100
+  overlap: 0.5
+  normalize: true
+  augmentation:
+    enabled: true
+    noise_std: 0.01
+    scale_range: [0.95, 1.05]
+    time_shift_range: [-5, 5]
+
+# Evaluation Configuration
+evaluation:
+  compute_perplexity: true
+  compute_codebook_usage: true
+  compute_cluster_entropy: true
+  compute_state_transitions: true
+  save_visualizations: true
+  visualization_dir: "./analysis/visualizations/"
+
+# Export Configuration
+export:
+  onnx:
+    enabled: true
+    opset_version: 11      # ONNX opset version
+    dynamic_axes: false    # Use static shapes for Hailo
+    simplify: true         # Simplify ONNX graph
+    output_path: "./models/conv2d_vq_hdp_hsmm.onnx"
+  
+  hailo:
+    target_device: "hailo8"
+    quantization: "int8"   # Options: int8, fp16
+    calibration_samples: 100
+    optimization_level: 2   # 0-3, higher = more optimization
+
+# Logging Configuration
+logging:
+  level: "INFO"            # DEBUG, INFO, WARNING, ERROR
+  save_dir: "./logs/"
+  tensorboard: true
+  wandb:
+    enabled: false
+    project: "conv2d-vq-hdp-hsmm"
+    entity: null
+
+# Checkpointing
+checkpoint:
+  save_dir: "./checkpoints/"
+  save_frequency: 10       # Save every N epochs
+  keep_last_n: 3          # Keep last N checkpoints
+  save_best: true         # Save best model by validation metric
+  monitor_metric: "val_loss"  # Metric to monitor for best model
+
+# Hardware Configuration
+hardware:
+  device: "auto"          # auto, cpu, cuda, mps
+  mixed_precision: false  # Use AMP for faster training
+  num_workers: 4         # DataLoader workers
+  pin_memory: true       # Pin memory for GPU transfer

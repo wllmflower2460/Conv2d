@@ -195,19 +195,34 @@ All datasets are normalized and windowed consistently for unified training.
 pip install torch torchvision torchaudio
 pip install numpy pandas scikit-learn matplotlib seaborn
 pip install onnx onnxruntime
+pip install pyyaml  # For config files
+pip install onnx-simplifier  # Optional, for ONNX optimization
 ```
 
 ### Training the Conv2d-VQ-HDP-HSMM Model
 
 ```bash
-# Train the new Conv2d-VQ model
-python training/train_conv2d_vq.py
+# Train the new Conv2d-VQ model with config
+python training/train_conv2d_vq.py --config configs/model_config.yaml
 
 # Analyze learned behavioral codes
 python analysis/codebook_analysis.py --checkpoint models/best_conv2d_vq_model.pth
 
 # Test the complete architecture
 python models/conv2d_vq_hdp_hsmm.py
+```
+
+### 🎯 Benchmarking & Performance Testing
+
+```bash
+# Quick latency benchmark (B=1, CPU)
+python benchmark_model.py --batch-size 1 --device cpu
+
+# Full benchmark with ONNX export
+python benchmark_model.py --export-onnx --save-results --test-batch-sizes
+
+# GPU benchmark with custom config
+python benchmark_model.py --device cuda --config configs/model_config.yaml
 ```
 
 ### Legacy TCN-VAE Training
@@ -260,6 +275,43 @@ IMPROVED_CONFIG = {
 | HSMM States | 8-10 |
 | Confidence Calibration | High/Medium/Low |
 | Mutual Information | I(Z;Φ) computed |
+
+### 📊 VQ Metrics Monitoring
+
+The Vector Quantization layer now provides comprehensive metrics for monitoring codebook health:
+
+#### Key Metrics Exposed:
+- **Perplexity**: Measures codebook usage diversity (target: 50-200)
+  - Higher = more codes being used
+  - Lower = codebook collapse risk
+- **Usage Rate**: Fraction of codes actively used (target: 40-60%)
+- **Active Codes**: Number of unique codes in current batch
+- **Dead Codes**: Codes not used recently (automatic refresh available)
+- **Code Histogram**: Distribution of code usage frequencies
+- **Entropy**: Information content of code distribution
+
+#### Accessing Metrics in Training:
+```python
+# During training loop
+z_q, loss_dict, info = model.vq_layer(z_e)
+
+# Monitor key metrics
+print(f"Perplexity: {info['perplexity']:.2f}")
+print(f"Active codes: {info['active_codes']}/{num_codes}")
+print(f"Usage rate: {info['usage']:.2%}")
+print(f"Dead codes: {info['dead_codes']}")
+```
+
+#### Configuration Options (via YAML):
+```yaml
+vq:
+  num_codes: 512
+  code_dim: 64
+  commitment_cost: 0.25    # Tunable: encoder-codebook balance
+  ema_decay: 0.99          # Tunable: codebook update smoothness
+  dead_code_threshold: 100  # Steps before marking code "dead"
+  dead_code_refresh: true   # Auto-refresh dead codes
+```
 
 ### Legacy TCN-VAE Results
 
