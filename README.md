@@ -37,6 +37,20 @@ We've successfully implemented the **Conv2d-VQ-HDP-HSMM architecture** - a groun
 - **Cross-dataset generalization**: Validated preprocessing pipeline
 - **Deployment-ready**: Enhanced pipeline architecture proven
 
+## 🆕 Latest Enhancements (2025-09-21)
+
+### Movement Library Integration ✨
+- **Advanced Preprocessing**: Gap filling, rolling filters, Savitzky-Golay smoothing
+- **Kinematic Features**: 14+ behavioral features including synchrony metrics
+- **Diagnostic Suite**: Comprehensive data quality analysis with visualizations
+- **Production Ready**: Graceful fallbacks, GPU-compatible, batch processing
+
+### Quality Control System 🛡️
+- **GIGO Prevention**: Multi-layer validation to reject bad data before model entry
+- **Codebook Health**: Monitor VQ usage, diversity, and transition patterns
+- **Quality Gates**: Configurable thresholds with strict/standard/lenient modes
+- **Automated Reports**: JSON health reports aligned with remote server requirements
+
 ## 🚀 Sprint 3 Deployment Assets
 
 ### Trained Models (Ready for Production)
@@ -212,6 +226,32 @@ python analysis/codebook_analysis.py --checkpoint models/best_conv2d_vq_model.pt
 python models/conv2d_vq_hdp_hsmm.py
 ```
 
+### 🔍 Data Quality & Preprocessing
+
+```bash
+# Run comprehensive diagnostics with Movement library
+python test_movement_integration.py
+
+# Quality control validation only
+python -c "
+from preprocessing.movement_diagnostics import BehavioralDataDiagnostics
+import torch
+data = torch.randn(8, 9, 2, 100)  # Test data
+diag = BehavioralDataDiagnostics()
+report = diag.run_quality_gates_only(data)
+print(f'Quality: {report.status}, Issues: {report.issues}')
+"
+
+# Full diagnostic suite with visualizations
+python -c "
+from preprocessing.movement_diagnostics import BehavioralDataDiagnostics
+import torch
+data = torch.randn(4, 9, 2, 100)
+diag = BehavioralDataDiagnostics(output_dir='./diagnostics')
+results = diag.run_full_diagnostic(data, save_report=True)
+"
+```
+
 ### 🎯 Benchmarking & Performance Testing
 
 ```bash
@@ -275,6 +315,17 @@ IMPROVED_CONFIG = {
 | HSMM States | 8-10 |
 | Confidence Calibration | High/Medium/Low |
 | Mutual Information | I(Z;Φ) computed |
+
+### 🔬 Preprocessing & Quality Metrics
+
+| Feature | Description | Performance |
+|---------|-------------|-------------|
+| Gap Interpolation | Fill sensor dropouts | ~0.19s for B=8 |
+| Median Filter | Noise reduction | ~0.09s |
+| Savitzky-Golay | Peak-preserving smooth | ~0.04s |
+| Feature Extraction | 14+ kinematic features | ~0.03s |
+| Quality Gates | GIGO prevention | <0.1s validation |
+| Diagnostic Suite | Full analysis | ~0.5s complete |
 
 ### 📊 VQ Metrics Monitoring
 

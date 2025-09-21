@@ -1,0 +1,26 @@
+{
+  "perplexity_mean": 432.7603454589844,
+  "perplexity_std": 9.799264907836914,
+  "vq_loss_mean": 0.24881264567375183,
+  "vq_loss_std": 0.0014376802137121558,
+  "usage_mean": 0.991015613079071,
+  "usage_std": 0.003405389841645956,
+  "num_codes": 512,
+  "code_dim": 64,
+  "active_codes": 512,
+  "usage_rate": 1.0,
+  "input_shape": [
+    32,
+    64,
+    1,
+    100
+  ],
+  "num_batches_tested": 10,
+  "commitment_cost": 0.25,
+  "decay": 0.99,
+  "dead_code_threshold": 100,
+  "entropy": 6.1486616134643555,
+  "max_cluster_size": 1.8480875492095947,
+  "min_cluster_size": 0.21957935392856598,
+  "mean_cluster_size": 0.5976120233535767
+}
