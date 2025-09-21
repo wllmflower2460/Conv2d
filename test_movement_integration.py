@@ -9,9 +9,16 @@ import numpy as np
 from pathlib import Path
 import sys
 import time
+import os
 
-# Add path for imports
-sys.path.append('/home/wllmflower/Development/Conv2d')
+# Add path for imports - use environment variable or derive from script location
+conv2d_path = os.environ.get('CONV2D_PATH')
+if not conv2d_path:
+    # If not set, derive from current file location
+    conv2d_path = str(Path(__file__).parent.absolute())
+
+if conv2d_path not in sys.path:
+    sys.path.append(conv2d_path)
 
 # Import Movement integration modules
 from preprocessing.movement_integration import MovementPreprocessor, create_movement_preprocessor
