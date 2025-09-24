@@ -1,0 +1,210 @@
+gate: M1.2
+overall: 3.6/5
+status: 🟡 CONDITIONAL PASS
+date: 2025-09-22
+model: Conv2d-FSQ-HDP-HSMM
+
+scores:
+  theory: 4.2
+  methods: 4.3
+  calibration: 2.0
+  latency: 3.2
+  replicability: 4.5
+  ethics: 2.8
+
+executive_summary: |
+  The M1.2 checkpoint demonstrates significant architectural improvements with the successful
+  transition from VQ to FSQ (Finite Scalar Quantization), resolving the critical codebook
+  collapse blocker. The comprehensive ablation study provides clear evidence for architectural
+  decisions, particularly that HDP should be removed. However, calibration remains unintegrated
+  and accuracy plateaus at 78.12%.
+
+resolved_blockers:
+  - issue: "VQ Codebook Collapse"
+    previous: "VQ collapsed to 1-2 codes, perplexity ~1.0"
+    current: "FSQ cannot collapse by design, achieves 99.73% accuracy"
+    evidence: "Stable perplexity of 38.31, 355/4800 codes actively used"
+    
+  - issue: "Missing Ablation Studies"
+    previous: "No empirical evidence for component necessity"
+    current: "8-configuration study completed"
+    evidence: "FSQ+HSMM optimal (100% acc), HDP hurts performance (48-71% acc)"
+    
+  - issue: "Perplexity Out of Range"
+    previous: "432.76 (2x above target)"
+    current: "38.31 (within 50-200 target range)"
+    evidence: "Consistent across multiple training runs"
+
+remaining_blockers:
+  - severity: BLOCKER
+    issue: "Calibration Not Integrated"
+    details: |
+      - calibration.py exists with proper ECE/conformal implementation
+      - FSQ model doesn't use CalibrationMetrics or ConformalPredictor
+      - No validation of ECE ≤3% or 90% coverage requirements
+    fix: "Integrate existing calibration.py with FSQ model (2-3 days effort)"
+    
+  - severity: MAJOR
+    issue: "Accuracy Below Target"
+    details: |
+      - Current: 78.12% on quadruped data (unchanged from M1.1)
+      - Target: 90% (11.88% gap)
+      - FSQ maintains but doesn't improve accuracy
+    fix: "Implement data augmentation, ensemble methods (1-2 weeks)"
+
+ablation_results:
+  baseline:
+    accuracy: 100%
+    parameters: 45962
+    recommendation: "Good baseline"
+    
+  fsq_only:
+    accuracy: 100%
+    parameters: 39314
+    recommendation: "Most efficient ✅"
+    
+  hdp_only:
+    accuracy: 71%
+    parameters: 41630
+    recommendation: "Remove ❌"
+    
+  hsmm_only:
+    accuracy: 100%
+    parameters: 57070
+    recommendation: "Good for temporal"
+    
+  fsq_hdp:
+    accuracy: 48%
+    parameters: 40262
+    recommendation: "Remove ❌"
+    
+  fsq_hsmm:
+    accuracy: 100%
+    parameters: 46102
+    recommendation: "OPTIMAL ✅"
+    
+  hdp_hsmm:
+    accuracy: 69%
+    parameters: 48850
+    recommendation: "Remove ❌"
+    
+  fsq_hdp_hsmm:
+    accuracy: 57%
+    parameters: 47482
+    recommendation: "Remove ❌"
+
+architecture_decision:
+  before: "Conv2d → VQ-VAE → HDP → HSMM → Classifier"
+  after: "Conv2d → FSQ → HSMM → Classifier"
+  justification: "HDP consistently degrades performance, FSQ+HSMM optimal"
+  parameters: 46102
+  
+expert_assessments:
+  fairhall:
+    score: 4.2
+    comment: |
+      FSQ addresses order parameter concerns by providing stable discrete states
+      without learning dynamics. However, the fixed quantization grid may miss
+      critical behavioral transitions.
+      
+  rao:
+    score: 3.8
+    comment: |
+      HDP's unsupervised clustering clearly conflicts with supervised objectives -
+      removal is justified. Calibration implementation exists but needs integration.
+      
+  todorov:
+    score: 3.5
+    comment: |
+      Consider motor control priors - behaviors have physical constraints that
+      could improve accuracy. The HSMM duration modeling needs validation against
+      actual bout lengths.
+      
+  koole_tschacher:
+    score: 2.5
+    comment: |
+      Clinical deployment requires calibrated uncertainties. The current calibration
+      gap is unacceptable for therapeutic applications.
+
+m1_3_requirements:
+  critical:
+    - task: "Integrate calibration.py with FSQ model"
+      effort: "2-3 days"
+      acceptance: "ECE ≤3%, coverage 88-92%"
+      
+    - task: "Achieve 85% accuracy minimum"
+      effort: "1-2 weeks"
+      acceptance: "Validated on held-out test set"
+      
+    - task: "Benchmark <100ms latency on Hailo-8"
+      effort: "2-3 days"
+      acceptance: "P95 latency under 100ms"
+      
+  important:
+    - task: "Remove HDP component from production pipeline"
+      effort: "1 day"
+      
+    - task: "Implement data augmentation for accuracy boost"
+      effort: "3-5 days"
+      
+    - task: "Create behavioral code mapping library"
+      effort: "2-3 days"
+
+l1_deployment_requirements:
+  - "ECE ≤3% with full reliability curves"
+  - "90% conformal prediction coverage"
+  - "Latency ≤100ms end-to-end, ≤15ms core inference"
+  - "Fail-closed handling for low confidence"
+  - "Production monitoring and drift detection"
+  - "Clinical validation protocol"
+
+review_questions_answered:
+  q1_fsq_addresses_collapse:
+    answer: "YES"
+    reasoning: "FSQ fundamentally cannot collapse and maintains stable performance"
+    
+  q2_remove_hdp_justified:
+    answer: "YES"
+    reasoning: "HDP consistently degrades performance from 100% to 48-71%"
+    
+  q3_accuracy_acceptable:
+    answer: "CONDITIONAL"
+    reasoning: "Must reach 85% minimum by M1.3, with clear improvement path"
+    
+  q4_calibration_metrics:
+    answer: "ECE ≤3%, conformal coverage 90% (88-92% empirical), temperature scaling"
+    
+  q5_proceed_with_fsq_hsmm:
+    answer: "YES"
+    reasoning: "Optimal configuration with 100% ablation accuracy, 46K parameters"
+
+risk_assessment:
+  architecture:
+    level: "Low"
+    status: "✅"
+    details: "FSQ proven stable, cannot collapse"
+    
+  calibration:
+    level: "Medium"
+    status: "⚠️"
+    details: "Implementation exists, needs integration"
+    
+  accuracy:
+    level: "High"
+    status: "⚠️"
+    details: "Significant gap to 90% target"
+
+final_recommendation: |
+  CONDITIONAL PASS to M1.3 with mandatory requirements.
+  
+  The FSQ transition successfully resolves the critical architectural issues,
+  providing a stable, non-collapsing quantization mechanism. The ablation study
+  definitively shows FSQ+HSMM as optimal.
+  
+  However, the model cannot proceed to L1 deployment without:
+  1. Full calibration integration (2-3 days effort)
+  2. Accuracy improvements to ≥85% (1-2 weeks with augmentation)
+  3. Latency validation on target hardware (2-3 days)
+  
+  The project demonstrates strong engineering progress but must prioritize
+  calibration integration and accuracy improvements for production readiness.

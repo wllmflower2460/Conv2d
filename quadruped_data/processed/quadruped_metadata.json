@@ -1,0 +1,81 @@
+{
+  "dataset": "quadruped_locomotion",
+  "n_samples": 15000,
+  "n_classes": 10,
+  "behaviors": {
+    "stand": {
+      "id": 0,
+      "description": "Standing/stationary",
+      "frequency_hz": 0.5
+    },
+    "walk": {
+      "id": 1,
+      "description": "Walking gait (4-beat)",
+      "frequency_hz": 1.5
+    },
+    "trot": {
+      "id": 2,
+      "description": "Trotting (diagonal pairs)",
+      "frequency_hz": 3.0
+    },
+    "gallop": {
+      "id": 3,
+      "description": "Galloping (rotary gallop)",
+      "frequency_hz": 4.0
+    },
+    "turn_left": {
+      "id": 4,
+      "description": "Turning left",
+      "frequency_hz": 1.0
+    },
+    "turn_right": {
+      "id": 5,
+      "description": "Turning right",
+      "frequency_hz": 1.0
+    },
+    "jump": {
+      "id": 6,
+      "description": "Jumping",
+      "frequency_hz": 0.5
+    },
+    "pronk": {
+      "id": 7,
+      "description": "Pronking (all legs together)",
+      "frequency_hz": 2.0
+    },
+    "backup": {
+      "id": 8,
+      "description": "Backing up",
+      "frequency_hz": 1.0
+    },
+    "sit_down": {
+      "id": 9,
+      "description": "Sitting down transition",
+      "frequency_hz": 0.5
+    }
+  },
+  "input_shape": [
+    9,
+    100
+  ],
+  "sampling_rate_hz": 200,
+  "splits": {
+    "train": {
+      "start": 0,
+      "end": 10500,
+      "n_samples": 10500
+    },
+    "val": {
+      "start": 10500,
+      "end": 12750,
+      "n_samples": 2250
+    },
+    "test": {
+      "start": 12750,
+      "end": 15000,
+      "n_samples": 2250
+    }
+  },
+  "temporal_split": true,
+  "notes": "Based on quadruped locomotion patterns from MIT Cheetah and Boston Dynamics Spot"
+}

@@ -1,15 +1,42 @@
-# Preprocessing Module Documentation
+# Preprocessing Pipeline Documentation
 
-This module handles multi-dataset preprocessing and unified data pipeline creation for human activity recognition.
+## Overview
 
-## Files Overview
+The preprocessing pipeline for Conv2d-FSQ includes comprehensive quality assurance, data validation, and transformation procedures to ensure reliable behavioral analysis. This module handles multi-dataset preprocessing with QA validation for both human activity recognition and quadruped behavioral analysis.
 
-### `unified_pipeline.py`
-Main preprocessing pipeline that handles multiple HAR datasets with different formats and creates unified training data.
+## Pipeline Components
 
-## Classes
+### Core Modules
 
-### `MultiDatasetHAR`
+1. **`enhanced_pipeline.py`** - Primary preprocessing with dual approach support (cross-species and HAR)
+2. **`movement_diagnostics.py`** - Advanced quality control and validation system
+3. **`movement_integration.py`** - Integration with Movement neuroinformatics library
+4. **`kinematic_features.py`** - Kinematic feature extraction for behavioral analysis
+5. **`data_augmentation.py`** - Augmentation strategies for behavioral data
+6. **`unified_pipeline.py`** - Unified interface handling multiple HAR datasets
+7. **`stanford_dogs_pipeline.py`** - Specialized pipeline for dog behavioral data
+
+## Quality Assurance System
+
+### QualityControl Class
+Comprehensive quality control with multi-layer validation:
+
+```python
+from preprocessing.movement_diagnostics import QualityControl, QualityThresholds
+
+# Initialize with custom thresholds
+qa_thresholds = QualityThresholds(
+    max_nan_percentage=5.0,
+    min_signal_std=0.01,
+    max_signal_std=50.0,
+    min_codebook_usage=0.2,
+    min_perplexity=4.0
+)
+
+qc = QualityControl(thresholds=qa_thresholds, strict_mode=False)
+```
+
+### MultiDatasetHAR Class
 Central class for loading, preprocessing, and unifying multiple HAR datasets.
 
 ```python
@@ -34,11 +61,15 @@ def load_pamap2(self, data_path):
     """Load PAMAP2 dataset - 9-axis IMU data from chest sensor"""
 ```
 
-**Data Processing:**
+**Data Processing with QA:**
 - Extracts chest sensor IMU data (columns 4-12)
+- **QA Step**: Validates signal quality (SNR, variance)
 - Filters out NaN values and transient activities (activity_id = 0)
+- **QA Step**: Checks data consistency and gaps
 - Maps activity IDs to descriptive labels
+- **QA Step**: Verifies class distribution balance
 - Handles multiple subject files in Protocol directory
+- **QA Step**: Generates comprehensive quality report
 
 **Activity Mapping:**
 ```python

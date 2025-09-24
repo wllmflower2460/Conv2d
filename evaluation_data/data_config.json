@@ -1,0 +1,29 @@
+{
+  "data_source": "realistic_behavioral_imu",
+  "n_classes": 5,
+  "classes": [
+    "walking",
+    "running",
+    "turning",
+    "standing",
+    "jumping"
+  ],
+  "input_shape": [
+    9,
+    2,
+    50
+  ],
+  "splits": {
+    "train": {
+      "n_samples": 6000
+    },
+    "val": {
+      "n_samples": 2000
+    },
+    "test": {
+      "n_samples": 2000
+    }
+  },
+  "temporal_split": true,
+  "no_data_leakage_verified": true
+}

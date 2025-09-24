@@ -1,0 +1,172 @@
+nohup: ignoring input
+/home/wllmflower/Development/Conv2d/experiments/ablation_overnight.py:57: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  train_data = torch.load(data_dir / "quadruped_train.pt")
+/home/wllmflower/Development/Conv2d/experiments/ablation_overnight.py:58: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  val_data = torch.load(data_dir / "quadruped_val.pt")
+================================================================================
+OVERNIGHT ABLATION STUDY - Conv2d-VQ-HDP-HSMM
+Start time: 2025-09-20 21:43:35.571594
+================================================================================
+Device: cuda
+GPU: NVIDIA GeForce RTX 2060
+Memory: 6.02 GB
+
+================================================================================
+LOADING QUADRUPED DATASET
+================================================================================
+Loading preprocessed quadruped data...
+Loaded train: torch.Size([380, 9, 2, 100]), val: torch.Size([96, 9, 2, 100])
+
+Creating data loaders...
+Train batches: 6, Val batches: 2
+Batch size: 64
+
+================================================================================
+STARTING ABLATION EXPERIMENTS
+================================================================================
+
+Running ablation with 100 epochs per model...
+Expected duration: 6-12 hours depending on GPU
+Results will be saved periodically to: ablation_results_20250920_214335
+================================================================================
+Starting Ablation Study
+================================================================================
+
+[1/13] baseline_encoder — Encoder + Classifier only
+Components: VQ=False, HDP=False, HSMM=False, Entropy=False, Aug=False
+Parameters: 147,084
+Training (fixed budget)...
+Best quick-val accuracy: 0.9688 @ epoch 91
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.8854  ECE=0.1139  Cov90=0.824  Set=0.90  p95=0.04ms  Perplexity=0.0
+
+[2/13] vq_only — VQ only
+Components: VQ=True, HDP=False, HSMM=False, Entropy=False, Aug=False
+Parameters: 147,084
+Training (fixed budget)...
+Best quick-val accuracy: 0.4688 @ epoch 0
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.2292  ECE=0.1407  Cov90=1.000  Set=11.94  p95=0.07ms  Perplexity=1.0
+
+[3/13] hdp_only — HDP only
+Components: VQ=False, HDP=True, HSMM=False, Entropy=False, Aug=False
+Parameters: 149,683
+Training (fixed budget)...
+Best quick-val accuracy: 0.9583 @ epoch 93
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.9375  ECE=0.0317  Cov90=0.897  Set=0.94  p95=0.13ms  Perplexity=0.0
+
+[4/13] hsmm_only — HSMM only
+Components: VQ=False, HDP=False, HSMM=True, Entropy=False, Aug=False
+Parameters: 173,336
+Training (fixed budget)...
+Best quick-val accuracy: 0.9583 @ epoch 89
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.9375  ECE=0.0820  Cov90=0.809  Set=0.85  p95=1.77ms  Perplexity=0.0
+
+[5/13] vq_hdp — VQ + HDP
+Components: VQ=True, HDP=True, HSMM=False, Entropy=False, Aug=False
+Parameters: 149,683
+Training (fixed budget)...
+Best quick-val accuracy: 0.5521 @ epoch 1
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.2292  ECE=0.1424  Cov90=1.000  Set=11.94  p95=0.16ms  Perplexity=1.0
+
+[6/13] vq_hsmm — VQ + HSMM
+Components: VQ=True, HDP=False, HSMM=True, Entropy=False, Aug=False
+Parameters: 173,336
+Training (fixed budget)...
+Best quick-val accuracy: 0.5417 @ epoch 0
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.2292  ECE=0.1511  Cov90=1.000  Set=11.84  p95=1.80ms  Perplexity=1.0
+
+[7/13] hdp_hsmm — HDP + HSMM
+Components: VQ=False, HDP=True, HSMM=True, Entropy=False, Aug=False
+Parameters: 175,935
+Training (fixed budget)...
+Best quick-val accuracy: 0.9583 @ epoch 94
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.9375  ECE=0.0790  Cov90=0.868  Set=0.90  p95=1.85ms  Perplexity=0.0
+
+[8/13] vq_hdp_hsmm — VQ+HDP+HSMM (no uncertainty)
+Components: VQ=True, HDP=True, HSMM=True, Entropy=False, Aug=False
+Parameters: 175,935
+Training (fixed budget)...
+Best quick-val accuracy: 0.5312 @ epoch 0
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.2292  ECE=0.1465  Cov90=0.941  Set=10.97  p95=1.87ms  Perplexity=1.0
+
+[9/13] full_no_aug — Full model without augmentation
+Components: VQ=True, HDP=True, HSMM=True, Entropy=True, Aug=False
+Parameters: 175,946
+Training (fixed budget)...
+Best quick-val accuracy: 0.5312 @ epoch 0
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.2292  ECE=0.1465  Cov90=0.941  Set=10.97  p95=1.93ms  Perplexity=1.0
+
+[10/13] full_with_aug — Full model with augmentation
+Components: VQ=True, HDP=True, HSMM=True, Entropy=True, Aug=True
+Parameters: 175,946
+Training (fixed budget)...
+Best quick-val accuracy: 0.5417 @ epoch 0
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.2292  ECE=0.1618  Cov90=0.941  Set=10.97  p95=1.93ms  Perplexity=1.0
+
+[11/13] vq_256_codes_beta_0_4 — Recommended VQ fix
+Components: VQ=True, HDP=True, HSMM=True, Entropy=True, Aug=True
+Parameters: 175,946
+Training (fixed budget)...
+Best quick-val accuracy: 0.5417 @ epoch 0
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.2292  ECE=0.1618  Cov90=0.941  Set=10.97  p95=1.89ms  Perplexity=1.0
+
+[12/13] vq_128_codes_beta_0_5 — Small codebook
+Components: VQ=True, HDP=True, HSMM=True, Entropy=True, Aug=True
+Parameters: 175,946
+Training (fixed budget)...
+Best quick-val accuracy: 0.5417 @ epoch 0
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.2292  ECE=0.1429  Cov90=1.000  Set=11.94  p95=1.94ms  Perplexity=1.0
+
+[13/13] vq_512_codes_beta_0_25 — Large codebook control
+Components: VQ=True, HDP=True, HSMM=True, Entropy=True, Aug=True
+Parameters: 175,946
+Training (fixed budget)...
+Best quick-val accuracy: 0.4375 @ epoch 1
+Evaluating...
+Saved: ablation_results_20250920_214335/ablation_results.json and ablation_results_20250920_214335/ablation_results.csv
+Acc=0.2292  ECE=0.1512  Cov90=1.000  Set=11.97  p95=1.95ms  Perplexity=1.0
+Report saved to ablation_results_20250920_214335/ablation_report.md
+
+================================================================================
+ABLATION STUDY COMPLETE
+================================================================================
+
+Best configuration: hdp_only
+  Accuracy: 0.9375
+  ECE: 0.0317
+  PI90 Coverage: 0.8971
+  P95 Latency: 0.13 ms
+  Perplexity: 0.00
+
+⚠️ Some targets not met. See report for details.
+
+Total runtime: 0.34 hours
+End time: 2025-09-20 22:03:42.705446
+
+Results saved to: ablation_results_20250920_214335/
+  - ablation_results.json
+  - ablation_results.csv
+  - ablation_report.md

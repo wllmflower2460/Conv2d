@@ -25,11 +25,12 @@ We've successfully implemented the **Conv2d-VQ-HDP-HSMM architecture** - a groun
 
 ## 🏆 Training Achievements (2025-09-06)
 
-### Quadruped Behavioral Recognition (COMPLETED ✅)
-- **78.12% validation accuracy** on dog behavior classification
-- **72.01% F1 score** for behavioral transition detection
-- **Training duration**: 350+ epochs with early stopping
-- **Model size**: <10MB optimized for edge deployment
+### Quadruped Behavioral Recognition (M1.5 UPDATED ✅)
+- **Target: 78.12% validation accuracy** (M1.0-M1.2 baseline)
+- **Current: Training with proper methodology** after M1.4 gate failure
+- **Data**: 10-class quadruped locomotion (stand, walk, trot, gallop, etc.)
+- **Model**: FSQ architecture with [8,6,5] quantization levels
+- **QA**: Full preprocessing validation pipeline
 
 ### Enhanced Multi-Dataset Integration (VALIDATED ✅)
 - **5 datasets integrated**: WISDM, HAPT, PAMAP2, UCI-HAR, TartanIMU
@@ -37,28 +38,34 @@ We've successfully implemented the **Conv2d-VQ-HDP-HSMM architecture** - a groun
 - **Cross-dataset generalization**: Validated preprocessing pipeline
 - **Deployment-ready**: Enhanced pipeline architecture proven
 
-## 🆕 Latest Enhancements (2025-09-21)
+## 🆕 Latest Enhancements (2025-09-22 - M1.5 Resolution)
 
-### Movement Library Integration ✨
-- **Advanced Preprocessing**: Gap filling, rolling filters, Savitzky-Golay smoothing
+### Preprocessing with Quality Assurance ✨
+- **QA System**: Multi-layer validation preventing garbage-in-garbage-out
+- **Movement Integration**: Gap filling, filters, Savitzky-Golay smoothing
 - **Kinematic Features**: 14+ behavioral features including synchrony metrics
-- **Diagnostic Suite**: Comprehensive data quality analysis with visualizations
-- **Production Ready**: Graceful fallbacks, GPU-compatible, batch processing
+- **Data Validation**: NaN/Inf handling, signal quality checks, class balance
+- **Production Ready**: Temporal splits, no data leakage, honest metrics
 
-### Quality Control System 🛡️
-- **GIGO Prevention**: Multi-layer validation to reject bad data before model entry
-- **Codebook Health**: Monitor VQ usage, diversity, and transition patterns
-- **Quality Gates**: Configurable thresholds with strict/standard/lenient modes
-- **Automated Reports**: JSON health reports aligned with remote server requirements
+### M1.5 Gate Resolution 🛡️
+- **Fixed Evaluation**: Eliminated synthetic data leakage from M1.4
+- **Real Data**: Quadruped locomotion and behavioral datasets
+- **Proper Splits**: Temporal train/val/test with no overlap
+- **Honest Metrics**: Expect 70-80% accuracy, not fake 99.95%
+- **Quality Gates**: Comprehensive preprocessing QA before training
 
 ## 🚀 Sprint 3 Deployment Assets
 
-### Trained Models (Ready for Production)
+### Trained Models (M1.5 In Progress)
 ```bash
-# Ready to copy to tcn-vae-models/:
-models/final_quadruped_tcn_vae.pth      # 78.12% quadruped model
-models/quadruped_processor.pkl          # Preprocessing pipeline
-models/enhanced_recovery_model.pth      # Enhanced pipeline checkpoint
+# Models being retrained with proper methodology:
+models/conv2d_fsq_trained_*.pth        # FSQ models (various checkpoints)
+m15_fsq_best_qa.pth                    # Best model with QA validation
+m15_best_model.pth                     # M1.5 training checkpoint
+
+# Datasets:
+quadruped_data/processed/               # Quadruped locomotion data
+evaluation_data/                        # Proper train/val/test splits
 ```
 
 ### Hailo Architecture Fix (Ready for GPUSrv)
@@ -80,16 +87,26 @@ DEPLOYMENT_QUICK_REFERENCE.md           # Immediate deployment guide
 ## 📁 Key Files & Components
 
 ### Core Model Architecture
+- `models/conv2d_fsq_model.py` - FSQ model (no collapse issues)
 - `models/conv2d_vq_hdp_hsmm.py` - Complete integrated model
 - `models/vq_ema_2d.py` - Vector quantization with EMA updates
-- `models/hdp_components.py` - Hierarchical Dirichlet Process clustering
 - `models/hsmm_components.py` - Hidden Semi-Markov Model dynamics
 - `models/entropy_uncertainty.py` - Uncertainty quantification module
 
-### Training & Analysis
-- `training/train_conv2d_vq.py` - Training script for Conv2d-VQ model
-- `analysis/codebook_analysis.py` - Behavioral code visualization
-- `IMPLEMENTATION_SUMMARY.md` - Complete technical documentation
+### Preprocessing & QA
+- `preprocessing/movement_diagnostics.py` - Quality control system
+- `preprocessing/enhanced_pipeline.py` - Multi-dataset support
+- `preprocessing/README.md` - Complete preprocessing documentation
+
+### Training Scripts (M1.5)
+- `setup_quadruped_datasets.py` - Generate behavioral data
+- `train_fsq_simple_qa.py` - FSQ training with QA
+- `evaluate_m15_simple.py` - Proper evaluation demonstration
+
+### Documentation
+- `DATASET_DOCUMENTATION.md` - Complete dataset specifications
+- `TRAINING_PIPELINE.md` - Full training pipeline guide
+- `M1_5_GATE_REVIEW_RESOLUTION.md` - M1.5 fixes and improvements
 
 ## 📁 Repository Structure (Training Environment)
 

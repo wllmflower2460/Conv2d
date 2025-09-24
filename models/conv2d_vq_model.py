@@ -174,13 +174,13 @@ class Conv2dVQModel(nn.Module):
         self,
         input_channels: int = 9,
         input_height: int = 2,
-        num_codes: int = 512,
+        num_codes: int = 256,  # Reduced from 512 per advisor recommendation
         code_dim: int = 64,
         hidden_channels: List[int] = [64, 128, 256],
         num_activities: int = 12,
         dropout: float = 0.2,
         vq_decay: float = 0.99,
-        commitment_cost: float = 0.25
+        commitment_cost: float = 0.4  # Increased from 0.25 per advisor recommendation
     ):
         super().__init__()
         

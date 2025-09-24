@@ -13,28 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Welcome.md",
+                "file": "Agent_Reviews/README.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Welcome"
-            }
-          }
-        ]
-      },
-      {
-        "id": "ab18f4b4a70939a4",
-        "type": "tabs",
-        "children": [
-          {
-            "id": "f3d8c015b9a52998",
-            "type": "leaf",
-            "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "title": "README"
             }
           }
         ]
@@ -187,6 +171,10 @@
   },
   "active": "757be4e20c9bfce3",
   "lastOpenFiles": [
-    "Welcome.md"
+    "Agent_Reviews/M1_GATE_RESPONSE.md",
+    "Unified_Research/Conv2d-VQ-HDP-HSMM_Quick_Reference.md",
+    "Welcome.md",
+    "Unified_Research/Unified_Theory_Computational_Behavioral_Synchrony.md",
+    "Agent_Reviews/README.md"
   ]
 }

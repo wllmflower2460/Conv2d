@@ -1,0 +1,56 @@
+diff --git a/Ablation_Framework_Upgraded.py b/Ablation_Framework_Upgraded.py
+--- a/Ablation_Framework_Upgraded.py
++++ b/Ablation_Framework_Upgraded.py
+@@ -1,6 +1,8 @@
+ """
+ Ablation_Framework_Upgraded.py
+
++PATCH: Conformal sets guaranteed non-empty; adjustable calibration split.
++
+ Committee-ready ablation framework for the Conv2d-VQ-HDP-HSMM model.
+ Adds:
+   - Fixed training budget + deterministic seeds (fairness)
+@@ -73,10 +75,21 @@
+ def prediction_set_mask(probs: np.ndarray, q: float) -> np.ndarray:
+-    """Return boolean mask (N, C) of labels included in each prediction set."""
+-    return (1.0 - probs) <= q
++    """
++    Return boolean mask (N, C) of labels included in each prediction set.
++    Guarantee non-empty set by forcing inclusion of the argmax label.
++    """
++    mask = (1.0 - probs) <= q
++    if mask.ndim != 2:
++        raise ValueError("probs must be 2D (N, C)")
++    top1 = probs.argmax(axis=1)
++    mask[np.arange(mask.shape[0]), top1] = True
++    return mask
+
+@@ -246,11 +259,17 @@
+-        # ---- calibration: temperature scaling on calibration split ----
+-        n = labels.size(0); n_cal = max(int(0.3 * n), 1)
++        # ---- calibration: temperature scaling on calibration split ----
++        # PATCH: make calibration split adjustable & safer for small sets
++        CAL_SPLIT = 0.5  # was 0.3
++        n = labels.size(0)
++        n_cal = max(int(CAL_SPLIT * n), 1)
+         logits_cal, labels_cal = logits[:n_cal], labels[:n_cal]
+         logits_test, labels_test = logits[n_cal:], labels[n_cal:] if n - n_cal > 0 else (logits[:], labels[:])
+
+         T = fit_temperature(logits_cal.to(self.device), labels_cal.to(self.device))
+         probs_test = torch.softmax(logits_test / T, dim=1).cpu().numpy()
++        # Guard: if all probs are nearly uniform, warn via wide sets
++        # (coverage will reveal it; the non-empty rule ensures sets are valid)
+         conf_test = probs_test.max(axis=1)
+         pred_test = probs_test.argmax(axis=1)
+         correct_test = (pred_test == labels_test.cpu().numpy()).astype(float)
+         ece = expected_calibration_error(conf_test, correct_test, n_bins=15)
+
+         # ---- split conformal prediction (classification) ----
+         probs_cal = torch.softmax(logits_cal / T, dim=1).cpu().numpy()
+         y_cal = labels_cal.cpu().numpy()
+         q = conformal_threshold(probs_cal, y_cal, alpha=0.10)
+-        P = prediction_set_mask(probs_test, q)  # (N_test, C)
++        P = prediction_set_mask(probs_test, q)  # (N_test, C) - now guaranteed non-empty
+         y_test = labels_test.cpu().numpy()
+         pi90_coverage = float(P[np.arange(P.shape[0]), y_test].mean()) if P.shape[0] > 0 else 0.0
+         avg_set_size = float(P.sum(axis=1).mean()) if P.shape[0] > 0 else 0.0

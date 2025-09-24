@@ -236,34 +236,63 @@ class EntropyUncertaintyModule(nn.Module):
     def _compute_confidence(
         self,
         state_entropy_norm: torch.Tensor,
-        phase_entropy_norm: float
+        phase_entropy_norm: float,
+        conformal_predictor: Optional['ConformalPredictor'] = None,
+        state_posterior: Optional[torch.Tensor] = None
     ) -> Dict[str, Union[float, str]]:
-        """Compute confidence metrics based on entropy"""
+        """Compute confidence metrics based on entropy with proper calibration"""
         # Average entropy
         avg_entropy = (state_entropy_norm.mean() + phase_entropy_norm) / 2
         
         # Determine confidence level
         if avg_entropy <= self.confidence_threshold_high:
             confidence_level = 'high'
-            interval_width = 0.1
+            base_width = 0.1
         elif avg_entropy <= self.confidence_threshold_low:
             confidence_level = 'medium'
-            interval_width = 0.2
+            base_width = 0.2
         else:
             confidence_level = 'low'
-            interval_width = 0.35
+            base_width = 0.35
         
-        # Mock confidence interval (in practice, use conformal prediction)
-        center = 0.5 + 0.3 * (1 - avg_entropy)  # Higher confidence -> higher score
+        # Use conformal prediction if available for calibrated intervals
+        if conformal_predictor is not None and state_posterior is not None:
+            try:
+                from .calibration import ConformalPredictor
+                predictions, lower_bounds, upper_bounds = conformal_predictor.predict_interval(state_posterior)
+                
+                # Compute average interval width
+                avg_width = (upper_bounds - lower_bounds).float().mean().item()
+                
+                # Get confidence score from posterior max probability
+                max_prob = state_posterior.max(dim=1)[0].mean().item()
+                
+                return {
+                    'confidence_level': confidence_level,
+                    'confidence_score': float(max_prob),
+                    'confidence_interval': (
+                        float(lower_bounds.mean()),
+                        float(upper_bounds.mean())
+                    ),
+                    'interval_width': avg_width,
+                    'calibrated': True
+                }
+            except Exception:
+                # Fall back to entropy-based estimation
+                pass
+        
+        # Entropy-based confidence (fallback or when conformal not available)
+        confidence_score = float(1 - avg_entropy)
         
         return {
             'confidence_level': confidence_level,
-            'confidence_score': float(1 - avg_entropy),
+            'confidence_score': confidence_score,
             'confidence_interval': (
-                max(0, center - interval_width/2),
-                min(1, center + interval_width/2)
+                max(0, confidence_score - base_width/2),
+                min(1, confidence_score + base_width/2)
             ),
-            'interval_width': interval_width
+            'interval_width': base_width,
+            'calibrated': False
         }
     
     def _get_marginals(
