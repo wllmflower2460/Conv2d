@@ -53,7 +53,103 @@ python setup_quadruped_datasets.py
 # - ./quadruped_data/processed/quadruped_metadata.json
 ```
 
-### Step 3: Preprocessing with QA
+### Step 3: Data Quality Monitoring
+
+Before preprocessing, monitor data quality to catch issues early:
+
+```python
+# data_quality_monitor.py
+import numpy as np
+import logging
+from datetime import datetime
+
+class DataQualityMonitor:
+    """Monitor and report data quality metrics."""
+    
+    def __init__(self, threshold_nan_percent=5.0, threshold_inf_percent=1.0):
+        self.threshold_nan = threshold_nan_percent
+        self.threshold_inf = threshold_inf_percent
+        self.history = []
+        
+    def analyze(self, data, dataset_name="unknown"):
+        """Comprehensive data quality analysis."""
+        metrics = {
+            'timestamp': datetime.now().isoformat(),
+            'dataset': dataset_name,
+            'shape': data.shape,
+            'dtype': str(data.dtype),
+            'total_elements': data.size,
+            
+            # NaN analysis
+            'nan_count': np.isnan(data).sum(),
+            'nan_percentage': (np.isnan(data).sum() / data.size) * 100,
+            'nan_by_channel': [np.isnan(data[:, i, :]).sum() for i in range(data.shape[1])],
+            
+            # Inf analysis  
+            'inf_count': np.isinf(data).sum(),
+            'inf_percentage': (np.isinf(data).sum() / data.size) * 100,
+            
+            # Statistical properties
+            'mean': float(np.nanmean(data)),
+            'std': float(np.nanstd(data)),
+            'min': float(np.nanmin(data)),
+            'max': float(np.nanmax(data)),
+            
+            # Quality assessment
+            'quality_score': self._calculate_quality_score(data),
+            'requires_correction': False,
+            'recommended_strategy': 'none'
+        }
+        
+        # Determine if correction needed
+        if metrics['nan_percentage'] > self.threshold_nan:
+            metrics['requires_correction'] = True
+            if metrics['nan_percentage'] > 20:
+                metrics['recommended_strategy'] = 'drop'
+            elif metrics['nan_percentage'] > 10:
+                metrics['recommended_strategy'] = 'interpolate'
+            else:
+                metrics['recommended_strategy'] = 'mean'
+                
+        self.history.append(metrics)
+        return metrics
+    
+    def _calculate_quality_score(self, data):
+        """Calculate overall quality score (0-100)."""
+        nan_penalty = min(np.isnan(data).sum() / data.size * 100, 50)
+        inf_penalty = min(np.isinf(data).sum() / data.size * 100, 30)
+        variance_score = 20 if np.nanstd(data) > 0.01 else 0
+        return max(0, 100 - nan_penalty - inf_penalty - variance_score)
+    
+    def generate_report(self):
+        """Generate quality report from history."""
+        if not self.history:
+            return "No data analyzed yet"
+            
+        report = []
+        report.append("DATA QUALITY REPORT")
+        report.append("=" * 50)
+        
+        for metrics in self.history:
+            report.append(f"\nDataset: {metrics['dataset']}")
+            report.append(f"Shape: {metrics['shape']}")
+            report.append(f"Quality Score: {metrics['quality_score']:.1f}/100")
+            report.append(f"NaN: {metrics['nan_percentage']:.2f}%")
+            report.append(f"Inf: {metrics['inf_percentage']:.2f}%")
+            
+            if metrics['requires_correction']:
+                report.append(f"⚠️ CORRECTION REQUIRED")
+                report.append(f"   Strategy: {metrics['recommended_strategy']}")
+                
+        return "\n".join(report)
+
+# Usage example
+monitor = DataQualityMonitor()
+metrics = monitor.analyze(data, "quadruped_train")
+print(monitor.generate_report())
+```
+
+### Step 4: Preprocessing with QA
 
 ```python
 # preprocessing_pipeline.py
@@ -107,15 +203,107 @@ def preprocess_with_qa(data_path, strict_mode=False):
     
     return data, report
 
-def apply_corrections(data, validation):
-    """Apply automatic corrections based on validation results"""
+def apply_corrections(data, validation, nan_strategy='mean', log_corrections=True):
+    """Apply automatic corrections based on validation results.
+    
+    Args:
+        data: Input data array
+        validation: Validation results dictionary
+        nan_strategy: Strategy for handling NaN values
+            - 'zero': Replace with 0 (fastest but may bias)
+            - 'mean': Replace with channel mean (preserves distribution)
+            - 'median': Replace with channel median (robust to outliers)
+            - 'interpolate': Linear interpolation (best for time series)
+            - 'drop': Remove samples with NaN (reduces dataset size)
+            - 'raise': Raise exception (fail fast for debugging)
+        log_corrections: Whether to log correction statistics
+        
+    Returns:
+        Corrected data array
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     # Handle NaN values
     if validation.get('has_nan'):
-        data = np.nan_to_num(data, nan=0.0)
+        nan_mask = np.isnan(data)
+        nan_count = nan_mask.sum()
+        nan_percentage = (nan_count / data.size) * 100
+        
+        if log_corrections:
+            logger.warning(f"Found {nan_count} NaN values ({nan_percentage:.2f}% of data)")
+            
+        if nan_percentage > 10:
+            logger.error(f"High NaN percentage ({nan_percentage:.2f}%) indicates data quality issues!")
+            if nan_strategy == 'raise':
+                raise ValueError(f"Too many NaN values: {nan_percentage:.2f}%")
+        
+        # Apply selected strategy
+        if nan_strategy == 'zero':
+            data = np.nan_to_num(data, nan=0.0)
+            if log_corrections:
+                logger.info("Replaced NaN with zeros")
+                
+        elif nan_strategy == 'mean':
+            # Replace with per-channel mean
+            for i in range(data.shape[1]):  # Per channel
+                channel_data = data[:, i, :]
+                channel_mean = np.nanmean(channel_data)
+                data[:, i, :] = np.where(nan_mask[:, i, :], channel_mean, channel_data)
+            if log_corrections:
+                logger.info("Replaced NaN with channel means")
+                
+        elif nan_strategy == 'median':
+            # Replace with per-channel median
+            for i in range(data.shape[1]):
+                channel_data = data[:, i, :]
+                channel_median = np.nanmedian(channel_data)
+                data[:, i, :] = np.where(nan_mask[:, i, :], channel_median, channel_data)
+            if log_corrections:
+                logger.info("Replaced NaN with channel medians")
+                
+        elif nan_strategy == 'interpolate':
+            # Linear interpolation for time series
+            for b in range(data.shape[0]):
+                for c in range(data.shape[1]):
+                    signal = data[b, c, :]
+                    if np.any(np.isnan(signal)):
+                        # Create interpolation indices
+                        x = np.arange(len(signal))
+                        valid = ~np.isnan(signal)
+                        if np.sum(valid) > 1:  # Need at least 2 points
+                            data[b, c, :] = np.interp(x, x[valid], signal[valid])
+            if log_corrections:
+                logger.info("Replaced NaN using linear interpolation")
+                
+        elif nan_strategy == 'drop':
+            # Remove samples with any NaN
+            valid_samples = ~np.any(nan_mask, axis=(1, 2))
+            data = data[valid_samples]
+            dropped = np.sum(~valid_samples)
+            if log_corrections:
+                logger.info(f"Dropped {dropped} samples containing NaN")
+                
+        elif nan_strategy == 'raise':
+            raise ValueError(f"Data contains {nan_count} NaN values")
+        else:
+            raise ValueError(f"Unknown NaN strategy: {nan_strategy}")
     
     # Handle Inf values
     if validation.get('has_inf'):
-        data = np.clip(data, -1e6, 1e6)
+        inf_mask = np.isinf(data)
+        inf_count = inf_mask.sum()
+        inf_percentage = (inf_count / data.size) * 100
+        
+        if log_corrections:
+            logger.warning(f"Found {inf_count} Inf values ({inf_percentage:.2f}% of data)")
+            
+        # Clip to reasonable range
+        clip_min, clip_max = -1e6, 1e6
+        data = np.clip(data, clip_min, clip_max)
+        
+        if log_corrections:
+            logger.info(f"Clipped Inf values to [{clip_min}, {clip_max}]")
     
     return data
 
