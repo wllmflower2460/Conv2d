@@ -29,11 +29,11 @@ class VectorQuantizerEMA2D(nn.Module):
     """
     def __init__(
         self,
-        num_codes: int = 512,
+        num_codes: int = 256,  # Reduced from 512 per advisor recommendation
         code_dim: int = 64,
         decay: float = 0.99,
         epsilon: float = 1e-5,
-        commitment_cost: float = 0.25,
+        commitment_cost: float = 0.4,  # Increased from 0.25 per advisor recommendation
         init_scale: float = 1.0,
         dead_code_threshold: int = 100,
         enable_dead_code_refresh: bool = False

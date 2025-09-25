@@ -220,3 +220,4 @@ python analyze_stanford_keypoints.py
 - Use the factory pattern in `preprocessing/enhanced_pipeline.py` to switch between approaches
 - Models are stored with checkpoints for recovery from interruptions
 - The project uses Conv2d dimensions for Hailo-8 compatibility (Conv1d not supported)
+- remember my github credentials

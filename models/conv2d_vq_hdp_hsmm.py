@@ -37,10 +37,10 @@ class Conv2dVQHDPHSMM(nn.Module):
         sequence_length: int = 100,
         
         # VQ parameters
-        num_codes: int = 512,
+        num_codes: int = 256,  # Reduced from 512 per advisor recommendation
         code_dim: int = 64,
         vq_decay: float = 0.99,
-        commitment_cost: float = 0.25,
+        commitment_cost: float = 0.4,  # Increased from 0.25 per advisor recommendation
         
         # HDP parameters
         max_clusters: int = 20,

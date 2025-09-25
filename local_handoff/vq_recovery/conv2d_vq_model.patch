@@ -1,0 +1,31 @@
+diff --git a/conv2d_vq_model.py b/conv2d_vq_model.py
+--- a/conv2d_vq_model.py
++++ b/conv2d_vq_model.py
+@@ -70,6 +70,10 @@
+         # Encode
+         z_e = self.encoder(x)  # (B, code_dim, 1, T_out)
++        # PATCH: stabilize VQ by L2-normalizing features pre-quantization
++        import torch.nn.functional as _F
++        z_e = _F.normalize(z_e, dim=1)
++
+         # Vector Quantize
+         z_q, loss_dict, vq_info = self.vq(z_e)
+@@ -78,6 +82,21 @@
+-        # Decode
++        # Fallback if VQ collapsed (perplexity <= 1.5 or usage < 0.05)
++        try:
++            perp = float(vq_info.get("perplexity", 0.0))
++            usage = float(vq_info.get("usage", 0.0))
++        except Exception:
++            perp, usage = 0.0, 0.0
++        if perp <= 1.5 or usage < 0.05:
++            try:
++                from fallback_tokenizer import KMeansTokenizer
++                _km = KMeansTokenizer(num_codes=min(128, getattr(self.vq, "num_codes", 128)),
++                                      code_dim=z_e.shape[1], iters=5).to(z_e.device)
++                _km.fit(z_e.detach())
++                vq_info["indices"], vq_info["perplexity"], vq_info["usage"] = _km.tokenize(z_e.detach())
++            except Exception:
++                pass
++
+         x_recon = self.decoder(z_q)

@@ -1,0 +1,8 @@
+run_ablation_overnight.sh: line 4: $'\r': command not found
+==================================================
+LAUNCHING OVERNIGHT ABLATION STUDY
+Start time: Sat Sep 20 09:36:40 PM PDT 2025
+==================================================
+run_ablation_overnight.sh: line 9: $'\r': command not found
+run_ablation_overnight.sh: line 14: syntax error near unexpected token `elif'
+run_ablation_overnight.sh: line 14: `elif [ -d "venv" ]; then'

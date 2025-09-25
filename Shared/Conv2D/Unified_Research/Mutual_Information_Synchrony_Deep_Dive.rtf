@@ -1,0 +1,52 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Calibri;}}
+\fs24
+
+\b Mutual Information I(Z; \u934? ) for Behavioral Synchrony in a Discrete-Continuous Framework \b0\par
+
+\b Introduction and Context \b0\par
+Measuring behavioral synchrony often involves bridging discrete behavioral events with continuous coordination dynamics. In our framework (Conv2d–VQ–HDP–HSMM), we obtain discrete states Z_t (via a vector-quantized HSMM) and a continuous relative phase \u934? _t (via Hilbert transform on IMU signals). Mutual information I(Z;\u934? ) serves as a coupling metric between these two modalities. Intuitively, I(Z;\u934? ) quantifies how much knowing the discrete state reduces uncertainty about the continuous phase, and vice versa. This makes it a natural measure of interaction coherence or synchrony: when discrete behavioral states align strongly with phase-locked continuous dynamics, the mutual information is high, indicating genuine coordination. Conversely, if states and phase are unrelated, I(Z;\u934? ) will be low, reflecting only superficial or random synchrony. In what follows, we delve into the mathematical foundations of I(Z;\u934? ), practical estimation techniques, interpretation in a behavioral context, modeling of the conditional distributions, implementation of an online CoupledEntropyModule, and strategies for maximizing I(Z;\u934? ) during learning.\par
+
+\b Mathematical Foundations of I(Z; \u934? ) \b0\par
+Definition: Mutual information I(Z;\u934? ) between a discrete random variable Z and a continuous (circular) variable \u934? is defined as the Kullback–Leibler divergence between the joint distribution and the product of marginals: \par
+I(Z;\u934? ) = D\sub KL\super ( p(z,\u934? ) \u8250? p(z)p(\u934? ) ).\par
+Equivalently, in terms of entropy: I(Z;\u934? ) = H(Z) + H(\u934? ) - H(Z,\u934? ).\par
+Here H(Z) = -\sum p(z)\u8230? is the entropy of the discrete state (in bits), and H(\u934? ) = -\int p(\u934? )\u8230? is the differential entropy of the continuous phase over its circular domain. Because \u934? is an angle, its density is 2\pi-periodic. Differential entropy can be negative, but mutual information is non-negative and invariant to one-to-one transforms. \par
+Alternate expression: I(Z;\u934? ) = \sum_z p(z) D\sub KL\super ( p(\u934? |z) \u8250? p(\u934? ) ). This shows I(Z;\u934? ) measures how distinct each state's phase distribution is from the overall phase distribution. \par
+Units and normalization: define Behavioral-Dynamical Coherence (BDC) = I(Z;\u934? ) / min{H(Z), H(\u934? )}, ranging 0--1. BDC=1 indicates perfect predictability; BDC=0 independence. \par
+
+\b Estimating Mutual Information for a Discrete-Continuous Pair \b0\par
+1) Na\u239? ve Binning: discretize \u934? into bins; compute I(Z;B). Simple but sensitive to bin size and must respect circular wrap-around. \par
+2) Kernel Density Estimation (KDE): estimate p(\u934? |z) with circular (von Mises) kernels; average to get p(\u934? ). Choose bandwidth carefully; respects periodicity. \par
+3) k-Nearest Neighbors (kNN): Kozachenko–Leonenko-style estimators adapted for mixed variables avoid arbitrary bins/bandwidths and are consistent with enough data. \par
+4) Variational/Neural Estimation: MINE (DV bound) and contrastive InfoNCE maximize lower bounds of MI via a discriminator T(z,\u934? ). Useful for high dimensions and as trainable objectives. \par
+5) Heuristics: adding small noise to Z or quantizing \u934? can help but introduces bias; prefer mixed-type estimators. Use bootstraps or permutation tests for significance. \par
+
+\b Interpretation of I(Z; \u934? ) in Behavioral Synchrony \b0\par
+High I(Z;\u934? ): tight coupling between actions (Z) and timing (\u934? ); genuine synchrony (e.g., in-phase, stable). \par
+Low I(Z;\u934? ): decoupled content and timing; co-presence without coordination. \par
+Intermediate/Context-Optimal: more is not always better; extremely high synchrony can be rigid. Aim for context-appropriate coherence. Normalize with BDC (0--1) for interpretability. \par
+
+\b Modeling P(\u934? | Z): Circular Distributions \b0\par
+1) Von Mises: p(\u934? |z) = exp( \u954? cos(\u934? - \u956?) ) / (2\pi I\sub0(\u954?)). \u954? (kappa) is concentration (phase-lock strength); \u956? mean direction. \par
+2) Mixture of Von Mises: captures multi-modal phase preferences within a state (e.g., leader vs follower modes). \par
+3) Conditional Flows: normalizing flows conditioned on z to fit complex circular densities (ensure periodicity). \par
+4) Neural Decoders: map z to distribution parameters (e.g., \u956?, \u954?) via a small network; train by conditional likelihood. \par
+
+\b Implementing a CoupledEntropyModule (Online) \b0\par
+- Use a sliding window or exponential decay to track recent statistics.\par
+- Maintain counts for H(Z); circular histogram (or (C,S) sums) for H(\u934? ).\par
+- Compute H(\u934? |Z) by per-state phase histograms or von Mises fits; then I = H(\u934? ) - H(\u934? |Z).\par
+- Ensure numerical stability with pseudocounts/floors; use double precision.\par
+- Provide confidence intervals via moving bootstrap/jackknife at 1 Hz cadence.\par
+- Optimize latency by incremental updates to counts/entropies rather than recomputing from scratch. \par
+
+\b Maximizing I(Z; \u934? ) During Training \b0\par
+1) Variational Bound (Barber–Agakov): add auxiliary decoder q(\u934? |z) and maximize E[\log q(\u934? |z)] to reduce H(\u934? |Z) (increase MI). Balance with core objectives to avoid degenerate states. \par
+2) Contrastive Learning (InfoNCE): treat (z,\u934? ) as positives; sample negatives from p(z)p(\u934? ); train discriminator D(z,\u934? ) to identify true pairs, maximizing a lower bound on MI. \par
+3) Adaptive Codebook Shaping: encourage VQ codes to align with phase patterns via the MI objective (with care to avoid overfitting). \par
+4) Training Strategy: pre-train without MI, then fine-tune with MI; or joint training with a weighting schedule. Validate on held-out data to ensure generalization. \par
+
+\b Conclusion \b0\par
+I(Z;\u934? ) unifies the discrete (what) and continuous (how) perspectives of synchrony. With practical estimators, interpretable conditional models (von Mises/mixtures), a real-time CoupledEntropyModule, and InfoMax objectives, we can both measure and learn synchrony-aware representations. This yields an interpretable, uncertainty-aware, and clinically meaningful synchrony metric and representation within the Conv2d–VQ–HDP–HSMM architecture. \par
+}

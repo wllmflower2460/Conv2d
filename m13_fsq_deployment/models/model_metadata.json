@@ -1,0 +1,38 @@
+{
+  "model_type": "FSQ",
+  "architecture": "Conv2d-FSQ",
+  "input_shape": [
+    1,
+    9,
+    2,
+    100
+  ],
+  "output_shape": [
+    1,
+    10
+  ],
+  "num_classes": 10,
+  "fsq_levels": [
+    8,
+    6,
+    5,
+    5,
+    4
+  ],
+  "total_codes": 4800,
+  "test_accuracy": 99.95,
+  "checkpoint_date": "2025-09-21",
+  "deployment_date": "2025-09-22T08:09:57.345368",
+  "behaviors": [
+    "stationary",
+    "walking",
+    "running",
+    "jumping",
+    "turn_left",
+    "turn_right",
+    "behavior_6",
+    "behavior_7",
+    "behavior_8",
+    "behavior_9"
+  ]
+}

@@ -1,0 +1,141 @@
+gate: M1
+overall: 3.2/5  status: 🟡
+scores:
+  theory: 3.8   methods: 3.5   calibration: 2.4
+  latency: 3.0  replicability: 3.5  ethics: 2.8
+findings:
+  - severity: BLOCKER
+    msg: "Calibration metrics severely out of spec - ECE undefined, no empirical coverage testing"
+    fix: "Implement proper calibration testing with ECE computation and conformal prediction intervals"
+  - severity: BLOCKER
+    msg: "Perplexity 432.76 is 2x higher than target (50-200), indicating potential codebook overparameterization"
+    fix: "Reduce codebook size from 512 to 256 codes or increase commitment cost to 0.4"
+  - severity: BLOCKER
+    msg: "No evidence of conformal coverage testing for 90% PI requirement"
+    fix: "Implement conformal prediction with calibration set and validate 88-92% empirical coverage"
+  - severity: MAJOR
+    msg: "Entropy module uses mock confidence intervals instead of actual conformal prediction"
+    fix: "Replace lines 256-264 in entropy_uncertainty.py with proper conformal prediction implementation"
+  - severity: MAJOR
+    msg: "Missing ablation studies to prove necessity of HDP and HSMM components"
+    fix: "Create ablation variants: VQ-only, VQ+HDP, VQ+HSMM and compare performance"
+  - severity: MAJOR
+    msg: "78.12% accuracy falls 11.88% short of 90% target - no clear path to improvement"
+    fix: "Implement data augmentation, ensemble methods, or active learning to boost accuracy"
+  - severity: MAJOR
+    msg: "No biological validation of learned behavioral codes against ethogram"
+    fix: "Map VQ codes to known behavioral states and validate with domain experts"
+  - severity: MINOR
+    msg: "Temperature calibration parameter initialized at 1.0 without tuning"
+    fix: "Use validation set to optimize temperature scaling for better calibration"
+  - severity: MINOR
+    msg: "Missing latency benchmarks for <100ms inference target"
+    fix: "Add timing benchmarks for end-to-end inference on target hardware"
+actions:
+  - owner: [model_team]   effort: L   due: M1.1
+    task: "Implement proper calibration with ECE computation and conformal prediction"
+  - owner: [model_team]   effort: M   due: M1.1
+    task: "Tune hyperparameters to achieve perplexity in 50-200 range"
+  - owner: [validation_team]   effort: L   due: M1.2
+    task: "Conduct ablation studies for VQ, HDP, HSMM components"
+  - owner: [model_team]   effort: L   due: M1.2
+    task: "Implement strategies to reach 90% accuracy target"
+  - owner: [domain_expert]   effort: M   due: M1.2
+    task: "Validate biological plausibility of learned codes"
+  - owner: [systems_team]   effort: S   due: M1.1
+    task: "Benchmark inference latency on Hailo-8 hardware"
+references:
+  - "Guo et al. 2017 - On Calibration of Modern Neural Networks"
+  - "Angelopoulos & Bates 2021 - A Gentle Introduction to Conformal Prediction"
+  - "van den Oord et al. 2017 - Neural Discrete Representation Learning (VQ-VAE)"
+  - "Teh et al. 2006 - Hierarchical Dirichlet Processes"
+  - "Yu 2010 - Hidden Semi-Markov Models"
+artifacts_required:
+  - "calibration_validation_report.yaml with ECE and reliability curves"
+  - "conformal_coverage_test.json with empirical coverage rates"
+  - "ablation_study_results.csv comparing component contributions"
+  - "biological_validation_report.md mapping codes to behaviors"
+  - "latency_benchmarks.json with hardware-specific timings"
+
+detailed_critique:
+  uncertainty_quantification:
+    current_state: "Entropy module computes Shannon entropy and mutual information but uses mock confidence intervals"
+    issues:
+      - "Lines 256-264 create fake intervals based on entropy thresholds"
+      - "No actual conformal prediction implementation"
+      - "Missing calibration dataset for computing quantiles"
+    biological_concern: "Feldman would note that discrete state transitions need validated duration distributions"
+    
+  codebook_dynamics:
+    current_state: "VQ layer achieves 100% utilization (512/512 codes) with high perplexity"
+    issues:
+      - "Perplexity 432.76 suggests codebook is too large for data complexity"
+      - "May be memorizing rather than learning generalizable codes"
+      - "No evidence of hierarchical code organization matching behavioral taxonomy"
+    biological_concern: "Kelso/HKB would question if codes capture actual phase transitions"
+    
+  temporal_modeling:
+    current_state: "HSMM with negative binomial duration distributions"
+    issues:
+      - "No validation that learned durations match actual behavioral bout lengths"
+      - "Missing comparison to null model (fixed duration)"
+      - "Input-dependent transitions may introduce spurious dynamics"
+    biological_concern: "Todorov would require control-theoretic analysis of state transitions"
+    
+  clinical_deployment:
+    current_state: "Basic uncertainty metrics without safety guardrails"
+    issues:
+      - "No fail-closed mechanism for low-confidence predictions"
+      - "Missing out-of-distribution detection"
+      - "No adversarial robustness testing"
+    biological_concern: "Koole & Tschacher would emphasize need for clinical validation"
+
+theoretical_assessment:
+  strengths:
+    - "Novel unification of discrete (VQ) and continuous (phase) representations"
+    - "Principled use of HDP for non-parametric clustering"
+    - "Explicit duration modeling via HSMM addresses persistence"
+    
+  weaknesses:
+    - "Potential circular dependency between VQ codes and HDP clusters"
+    - "Mutual information calculation assumes independence that may not hold"
+    - "No theoretical guarantees on convergence or identifiability"
+    
+  fairhall_critique: |
+    The architecture shows promise but lacks rigorous validation of its core claims:
+    1. Order parameters (VQ codes) need to emerge from dynamics, not be imposed
+    2. Timescale separation between fast IMU and slow behaviors needs explicit modeling
+    3. The 100-timestep window may alias important dynamics
+    
+  rao_critique: |
+    From a probabilistic perspective, several issues need addressing:
+    1. No explicit prior over behavioral sequences - HDP is non-parametric but not fully Bayesian
+    2. Likelihood model unclear - how do IMU observations relate to latent states?
+    3. Missing hierarchical inference - should integrate over possible clusterings
+
+deployment_readiness:
+  blocking_issues:
+    - "ECE and conformal coverage requirements not met"
+    - "No production monitoring or drift detection"
+    - "Missing A/B testing framework for clinical validation"
+    
+  path_to_production:
+    immediate: "Fix calibration and implement conformal prediction"
+    short_term: "Validate on held-out clinical dataset"
+    medium_term: "Deploy with human-in-the-loop oversight"
+    long_term: "Autonomous operation after safety validation"
+
+recommendation: |
+  The Conv2d-VQ-HDP-HSMM model shows innovative architecture and promising initial results,
+  but requires significant work before production deployment. The 78.12% accuracy and
+  lack of proper calibration are blocking issues.
+  
+  Priority fixes:
+  1. Implement proper calibration with ECE ≤ 3% target
+  2. Add conformal prediction for 90% coverage guarantee
+  3. Reduce codebook size or adjust hyperparameters for target perplexity
+  4. Conduct ablation studies to justify architectural complexity
+  5. Validate biological plausibility with domain experts
+  
+  The model should not proceed to deployment (L1 gate) until calibration requirements
+  are met and accuracy improves to at least 85% (compromise target).
