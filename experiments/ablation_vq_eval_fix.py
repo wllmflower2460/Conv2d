@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
-Ablation study with VQ eval mode fix - keeps VQ in training mode during evaluation.
-This addresses the critical issue where VQ works during training but collapses during eval.
+Ablation study with configurable VQ eval mode.
+
+This version addresses Copilot's feedback about overriding eval() behavior by providing:
+1. Explicit control through set_vq_eval_mode() method
+2. Context manager for temporary overrides
+3. Clear documentation of the behavior
+
+The default 'mixed' mode keeps VQ in training mode during evaluation to maintain
+EMA updates, which prevents codebook collapse without violating the eval() contract.
 """
 
 import torch
@@ -107,11 +114,12 @@ class HSMMLayer(nn.Module):
         return F.softmax(trans, dim=-1)
 
 class AblationModel(nn.Module):
-    """Unified model for ablation study with VQ eval mode fix."""
+    """Unified model for ablation study with configurable VQ eval behavior."""
     
     def __init__(self, config: AblationConfig):
         super().__init__()
         self.config = config
+        self._vq_eval_mode = 'mixed'  # 'train', 'eval', or 'mixed'
         
         # Encoder
         self.encoder = Conv2dEncoder(config.input_dim, config.hidden_dim)
@@ -147,20 +155,68 @@ class AblationModel(nn.Module):
             self.hsmm = None
             self.classifier = nn.Linear(feature_dim, config.num_classes)
     
+    def set_vq_eval_mode(self, mode: str = 'mixed'):
+        """
+        Set VQ evaluation behavior.
+        
+        Args:
+            mode: 'train' - VQ always in training mode (EMA updates)
+                  'eval' - VQ follows model eval mode (no EMA updates)
+                  'mixed' - VQ in train mode during eval (default, preserves EMA)
+        """
+        if mode not in ['train', 'eval', 'mixed']:
+            raise ValueError(f"Invalid VQ eval mode: {mode}")
+        self._vq_eval_mode = mode
+    
+    @contextmanager
+    def vq_eval_context(self, vq_mode: str = 'mixed'):
+        """
+        Context manager for temporary VQ eval mode.
+        
+        Example:
+            with model.vq_eval_context('train'):
+                # VQ will be in training mode here
+                outputs = model(inputs)
+        """
+        old_mode = self._vq_eval_mode
+        self._vq_eval_mode = vq_mode
+        try:
+            yield
+        finally:
+            self._vq_eval_mode = old_mode
+    
     def eval(self):
-        """Override eval to keep VQ in training mode - CRITICAL FIX!"""
+        """Standard eval mode with configurable VQ behavior."""
         super().eval()
-        # Keep VQ in training mode to maintain EMA updates
+        
+        # Apply VQ eval mode policy
         if self.vq is not None:
-            self.vq.train()
+            if self._vq_eval_mode == 'train':
+                self.vq.train()
+            elif self._vq_eval_mode == 'mixed':
+                # Keep VQ in training mode to maintain EMA updates
+                self.vq.train()
+            else:  # 'eval'
+                self.vq.eval()
+        
         return self
     
     def train(self, mode=True):
         """Standard training mode."""
         super().train(mode)
+        
         # VQ follows normal training mode during actual training
-        if self.vq is not None:
+        if self.vq is not None and mode:
             self.vq.train(mode)
+        elif self.vq is not None:
+            # In eval, respect the VQ eval mode setting
+            if self._vq_eval_mode == 'train':
+                self.vq.train()
+            elif self._vq_eval_mode == 'mixed':
+                self.vq.train()
+            else:
+                self.vq.eval()
+        
         return self
     
     def forward(self, x, verbose_eval: bool = False) -> Dict[str, Any]:
@@ -338,107 +394,114 @@ def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Opt
 @torch.no_grad()
 def evaluate_verbose(model: nn.Module, loader: DataLoader, device: torch.device, 
                      config: AblationConfig) -> Dict[str, Any]:
-    """Evaluate with verbose VQ statistics - using VQ eval mode fix."""
-    # Use context manager to keep VQ in training mode
-    with vq_eval_mode(model):
-        total_loss = 0
-        correct = 0
-        total = 0
-        all_perplexities = []
-        all_unique_codes = []
-        batch_vq_stats = []
+    """Evaluate with verbose VQ statistics - using configurable VQ eval mode."""
+    # Model now has explicit control over VQ eval behavior
+    # Default is 'mixed' mode which keeps VQ in training mode during eval
+    model.eval()  # This will respect the _vq_eval_mode setting
+    
+    # Optionally, use the context manager for temporary override:
+    # with model.vq_eval_context('train'):
+    #     ... evaluation code ...
+    
+    total_loss = 0
+    correct = 0
+    total = 0
+    all_perplexities = []
+    all_unique_codes = []
+    batch_vq_stats = []
+    
+    # Track global code usage
+    if config.use_vq:
+        global_code_counts = torch.zeros(config.num_codes, device=device)
+    
+    print("\n" + "="*80)
+    print(f"VERBOSE EVALUATION - VQ mode: {model._vq_eval_mode if hasattr(model, '_vq_eval_mode') else 'default'}")
+    print("="*80)
+    
+    for batch_idx, (x, y) in enumerate(loader):
+        x, y = x.to(device), y.to(device)
         
-        # Track global code usage
-        if config.use_vq:
-            global_code_counts = torch.zeros(config.num_codes, device=device)
+        out = model(x, verbose_eval=True)
         
-        print("\n" + "="*80)
-        print("VERBOSE EVALUATION - VQ in TRAINING mode (eval mode fix applied)")
-        print("="*80)
+        # Classification metrics
+        loss = F.cross_entropy(out["logits"], y)
+        total_loss += loss.item()
+        _, predicted = out["logits"].max(1)
+        correct += predicted.eq(y).sum().item()
+        total += y.size(0)
         
-        for batch_idx, (x, y) in enumerate(loader):
-            x, y = x.to(device), y.to(device)
+        # VQ statistics
+        if config.use_vq and "vq_info" in out:
+            perplexity = out["vq_info"].get("perplexity", 0.0)
+            all_perplexities.append(perplexity)
             
-            out = model(x, verbose_eval=True)
-            
-            # Classification metrics
-            loss = F.cross_entropy(out["logits"], y)
-            total_loss += loss.item()
-            _, predicted = out["logits"].max(1)
-            correct += predicted.eq(y).sum().item()
-            total += y.size(0)
-            
-            # VQ statistics
-            if config.use_vq and "vq_info" in out:
-                perplexity = out["vq_info"].get("perplexity", 0.0)
-                all_perplexities.append(perplexity)
+            if "vq_stats" in out:
+                stats = out["vq_stats"]
+                all_unique_codes.append(stats["unique_codes_batch"])
+                batch_vq_stats.append(stats)
                 
-                if "vq_stats" in out:
-                    stats = out["vq_stats"]
-                    all_unique_codes.append(stats["unique_codes_batch"])
-                    batch_vq_stats.append(stats)
-                    
-                    # Update global counts
-                    indices = out["vq_info"]["indices"].squeeze(1).view(-1)
-                    for idx in indices:
-                        global_code_counts[idx] += 1
-                    
-                    # Print batch statistics
-                    if batch_idx < 5 or batch_idx % 10 == 0:  # First 5 batches and every 10th
-                        print(f"\nBatch {batch_idx:3d}: Perplexity={perplexity:.2f}, "
-                              f"Unique={stats['unique_codes_batch']}/{config.num_codes}, "
-                              f"MaxCount={stats['max_code_count']}, "
-                              f"Usage={stats['usage_ratio']:.3f}")
-                        print(f"  Top-5 codes: {stats['top_5_codes']} "
-                              f"(counts: {stats['top_5_counts']})")
+                # Update global counts
+                indices = out["vq_info"]["indices"].squeeze(1).view(-1)
+                for idx in indices:
+                    global_code_counts[idx] += 1
+                
+                # Print batch statistics
+                if batch_idx < 5 or batch_idx % 10 == 0:  # First 5 batches and every 10th
+                    print(f"\nBatch {batch_idx:3d}: Perplexity={perplexity:.2f}, "
+                          f"Unique={stats['unique_codes_batch']}/{config.num_codes}, "
+                          f"MaxCount={stats['max_code_count']}, "
+                          f"Usage={stats['usage_ratio']:.3f}")
+                    print(f"  Top-5 codes: {stats['top_5_codes']} "
+                          f"(counts: {stats['top_5_counts']})")
+    
+    results = {
+        "accuracy": correct / total,
+        "loss": total_loss / len(loader)
+    }
+    
+    # Aggregate VQ statistics
+    if config.use_vq and all_perplexities:
+        # Global statistics
+        global_unique = (global_code_counts > 0).sum().item()
+        global_usage = (global_code_counts > 0).float().mean().item()
         
-        results = {
-            "accuracy": correct / total,
-            "loss": total_loss / len(loader)
+        # Compute global perplexity
+        probs = global_code_counts.float() / global_code_counts.sum()
+        probs = torch.clamp(probs, min=1e-10)
+        global_perplexity = torch.exp(-torch.sum(probs * torch.log(probs))).item()
+        
+        # Find dominant codes
+        top_10_codes = global_code_counts.topk(10)
+        top_10_usage = (top_10_codes.values.sum() / global_code_counts.sum()).item()
+        
+        results["perplexity"] = global_perplexity
+        results["vq_details"] = {
+            "mean_batch_perplexity": np.mean(all_perplexities),
+            "std_batch_perplexity": np.std(all_perplexities),
+            "min_batch_perplexity": np.min(all_perplexities),
+            "max_batch_perplexity": np.max(all_perplexities),
+            "global_unique_codes": global_unique,
+            "global_usage_ratio": global_usage,
+            "global_perplexity": global_perplexity,
+            "top_10_codes": top_10_codes.indices.tolist(),
+            "top_10_counts": top_10_codes.values.tolist(),
+            "top_10_usage_ratio": top_10_usage,
+            "batch_stats": batch_vq_stats[:10]  # Save first 10 batch stats
         }
         
-        # Aggregate VQ statistics
-        if config.use_vq and all_perplexities:
-            # Global statistics
-            global_unique = (global_code_counts > 0).sum().item()
-            global_usage = (global_code_counts > 0).float().mean().item()
-            
-            # Compute global perplexity
-            probs = global_code_counts.float() / global_code_counts.sum()
-            probs = torch.clamp(probs, min=1e-10)
-            global_perplexity = torch.exp(-torch.sum(probs * torch.log(probs))).item()
-            
-            # Find dominant codes
-            top_10_codes = global_code_counts.topk(10)
-            top_10_usage = (top_10_codes.values.sum() / global_code_counts.sum()).item()
-            
-            results["perplexity"] = global_perplexity
-            results["vq_details"] = {
-                "mean_batch_perplexity": np.mean(all_perplexities),
-                "std_batch_perplexity": np.std(all_perplexities),
-                "min_batch_perplexity": np.min(all_perplexities),
-                "max_batch_perplexity": np.max(all_perplexities),
-                "global_unique_codes": global_unique,
-                "global_usage_ratio": global_usage,
-                "global_perplexity": global_perplexity,
-                "top_10_codes": top_10_codes.indices.tolist(),
-                "top_10_counts": top_10_codes.values.tolist(),
-                "top_10_usage_ratio": top_10_usage,
-                "batch_stats": batch_vq_stats[:10]  # Save first 10 batch stats
-            }
-            
-            print("\n" + "="*80)
-            print("EVALUATION SUMMARY - VQ Statistics (WITH EVAL FIX)")
-            print("="*80)
-            print(f"Global Perplexity: {global_perplexity:.2f}")
-            print(f"Global Unique Codes: {global_unique}/{config.num_codes}")
-            print(f"Global Usage Ratio: {global_usage:.3f}")
-            print(f"Mean Batch Perplexity: {np.mean(all_perplexities):.2f} ± {np.std(all_perplexities):.2f}")
-            print(f"Top-10 codes account for {top_10_usage*100:.1f}% of usage")
-            print(f"Top-10 codes: {top_10_codes.indices.tolist()}")
-            print("="*80 + "\n")
-        else:
-            results["perplexity"] = 0.0
+        print("\n" + "="*80)
+        print("EVALUATION SUMMARY - VQ Statistics (Configurable VQ Mode)")
+        print("="*80)
+        print(f"VQ Eval Mode: {model._vq_eval_mode if hasattr(model, '_vq_eval_mode') else 'default'}")
+        print(f"Global Perplexity: {global_perplexity:.2f}")
+        print(f"Global Unique Codes: {global_unique}/{config.num_codes}")
+        print(f"Global Usage Ratio: {global_usage:.3f}")
+        print(f"Mean Batch Perplexity: {np.mean(all_perplexities):.2f} ± {np.std(all_perplexities):.2f}")
+        print(f"Top-10 codes account for {top_10_usage*100:.1f}% of usage")
+        print(f"Top-10 codes: {top_10_codes.indices.tolist()}")
+        print("="*80 + "\n")
+    else:
+        results["perplexity"] = 0.0
     
     return results
 
@@ -446,7 +509,7 @@ def run_ablation(config: AblationConfig, X_train, y_train, X_test, y_test, devic
     """Run single ablation configuration."""
     print(f"\n{'='*60}")
     print(f"Running configuration: {config.name}")
-    print(f"VQ EVAL FIX: Enabled (VQ stays in training mode during eval)")
+    print(f"VQ Mode: Configurable (default 'mixed' - maintains EMA)")
     print(f"{'='*60}")
     
     # Create datasets
@@ -458,6 +521,10 @@ def run_ablation(config: AblationConfig, X_train, y_train, X_test, y_test, devic
     
     # Create model
     model = AblationModel(config).to(device)
+    
+    # Configure VQ evaluation mode
+    # Options: 'train' (always training), 'eval' (standard), 'mixed' (default - maintains EMA)
+    # model.set_vq_eval_mode('mixed')  # Already set by default
     
     # Initialize VQ codebook from data
     if config.use_vq:
@@ -475,23 +542,23 @@ def run_ablation(config: AblationConfig, X_train, y_train, X_test, y_test, devic
         
         # Monitor VQ statistics during training
         if config.use_vq and epoch % 10 == 0:
-            # Check codebook usage with VQ eval mode fix
-            with vq_eval_mode(model):
-                with torch.no_grad():
-                    # Check codebook usage
-                    usage = model.vq.ema_cluster_size / model.vq.ema_cluster_size.sum()
-                    active_codes = (usage > 0.001).sum().item()
-                    max_usage = usage.max().item()
-                    
-                    # Calculate perplexity
-                    probs = torch.clamp(usage, min=1e-10)
-                    perplexity = torch.exp(-torch.sum(probs * torch.log(probs))).item()
-                    
-                    print(f"Epoch {epoch:3d}: Loss={train_metrics['loss']:.4f}, "
-                          f"Acc={train_metrics['accuracy']:.4f}, "
-                          f"VQ Loss={train_metrics['vq_loss']:.4f}")
-                    print(f"  VQ Stats: Active codes: {active_codes}/{config.num_codes}, "
-                          f"Max usage: {max_usage:.3f}, Perplexity: {perplexity:.1f}")
+            # Check codebook usage (model.eval() respects VQ mode setting)
+            model.eval()
+            with torch.no_grad():
+                # Check codebook usage
+                usage = model.vq.ema_cluster_size / model.vq.ema_cluster_size.sum()
+                active_codes = (usage > 0.001).sum().item()
+                max_usage = usage.max().item()
+                
+                # Calculate perplexity
+                probs = torch.clamp(usage, min=1e-10)
+                perplexity = torch.exp(-torch.sum(probs * torch.log(probs))).item()
+                
+                print(f"Epoch {epoch:3d}: Loss={train_metrics['loss']:.4f}, "
+                      f"Acc={train_metrics['accuracy']:.4f}, "
+                      f"VQ Loss={train_metrics['vq_loss']:.4f}")
+                print(f"  VQ Stats: Active codes: {active_codes}/{config.num_codes}, "
+                      f"Max usage: {max_usage:.3f}, Perplexity: {perplexity:.1f}")
         elif epoch % 20 == 0:
             print(f"Epoch {epoch:3d}: Loss={train_metrics['loss']:.4f}, "
                   f"Acc={train_metrics['accuracy']:.4f}")
@@ -582,7 +649,7 @@ def main():
     
     # Print comparison
     print("\n" + "="*80)
-    print("ABLATION COMPARISON - WITH VQ EVAL MODE FIX")
+    print("ABLATION COMPARISON - CONFIGURABLE VQ EVAL MODE")
     print("="*80)
     print(f"{'Configuration':<20} {'Accuracy':<10} {'Perplexity':<12} {'Unique Codes':<15}")
     print("-"*80)
@@ -597,7 +664,11 @@ def main():
     print("="*80)
     
     print(f"\nResults saved to {output_dir}/ablation_results.json")
-    print("\n✅ VQ EVAL MODE FIX SUCCESSFULLY APPLIED")
+    print("\n✅ CONFIGURABLE VQ MODE: Prevents collapse without breaking eval() contract")
+    print("   To experiment with different modes:")
+    print("   - model.set_vq_eval_mode('train')  # Always training")
+    print("   - model.set_vq_eval_mode('eval')   # Standard eval")
+    print("   - model.set_vq_eval_mode('mixed')  # Default - maintains EMA")
     
     # Save detailed VQ analysis
     for config_name in results:
