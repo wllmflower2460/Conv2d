@@ -1,8 +1,8 @@
-# Conv2d-VQ-HDP-HSMM: Production-Ready Behavioral Synchrony Analysis
+# Conv2d-FSQ-Clustering: Production-Ready Behavioral Synchrony Analysis
 
-A complete framework for behavioral synchrony analysis combining Conv2d encoders, Vector Quantization (VQ), Hierarchical Dirichlet Process (HDP) clustering, and Hidden Semi-Markov Models (HSMM) with full uncertainty quantification and edge deployment capabilities.
+A complete framework for behavioral synchrony analysis combining Conv2d encoders, Finite Scalar Quantization (FSQ), deterministic post-hoc clustering, and temporal smoothing with full uncertainty quantification and edge deployment capabilities.
 
-[![Architecture](https://img.shields.io/badge/Architecture-Conv2d--VQ--HDP--HSMM-purple.svg)](#architecture)
+[![Architecture](https://img.shields.io/badge/Architecture-Conv2d--FSQ--Clustering-purple.svg)](#architecture)
 [![Accuracy](https://img.shields.io/badge/Accuracy-78.12%25-green.svg)](#performance)
 [![Deployment](https://img.shields.io/badge/Deployment-Production%20Ready-blue.svg)](#deployment)
 [![Model Size](https://img.shields.io/badge/Parameters-313K-orange.svg)](#model-specifications)
@@ -18,10 +18,10 @@ A complete framework for behavioral synchrony analysis combining Conv2d encoders
 ## 🏗️ Architecture Overview
 
 ```
-IMU Data (B,9,2,100) → Conv2d Encoder → FSQ Quantization → HDP Clustering → HSMM Dynamics
-                              ↓              ↓                ↓              ↓
-                         Features      Discrete Codes    Behaviors    Temporal States
-                                              ↓                           ↓
+IMU Data (B,9,2,100) → Conv2d Encoder → FSQ Quantization → Post-hoc Clustering → Temporal Smoothing
+                              ↓              ↓                 ↓                    ↓
+                         Features      Discrete Codes    Behaviors (K-means/GMM)   Smooth States
+                                              ↓                                         ↓
                                     Entropy & Uncertainty Module
                                               ↓
                                   Confidence-Calibrated Output
@@ -41,7 +41,7 @@ pip install -r requirements.txt
 
 ```bash
 # Train model
-python training/train_conv2d_vq.py
+python training/train_conv2d_fsq.py
 
 # Evaluate with metrics
 conv2d eval --config conf/exp/dogs.yaml --split test
