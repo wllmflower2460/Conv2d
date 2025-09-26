@@ -1,21 +1,21 @@
-# 🧬 Conv2d-VQ-HDP-HSMM: Advanced Behavioral Synchrony Analysis
+# 🧬 Conv2d-FSQ-HSMM: Advanced Behavioral Synchrony Analysis
 
-**Revolutionary architecture combining discrete representations, hierarchical clustering, and temporal dynamics with uncertainty quantification**  
+**Revolutionary architecture combining discrete representations with post-hoc clustering and temporal dynamics with uncertainty quantification**  
 **Status**: Complete implementation of unified behavioral synchrony framework
 
-[![Architecture](https://img.shields.io/badge/Architecture-Conv2d--VQ--HDP--HSMM-purple.svg)](#architecture)
+[![Architecture](https://img.shields.io/badge/Architecture-Conv2d--FSQ--HSMM-purple.svg)](#architecture)
 [![VQ Perplexity](https://img.shields.io/badge/VQ%20Perplexity-100--150-green.svg)](#vector-quantization)
 [![Uncertainty](https://img.shields.io/badge/Uncertainty-Quantified-blue.svg)](#uncertainty-quantification)
 [![Model Size](https://img.shields.io/badge/Parameters-313K-orange.svg)](#model-specifications)
 
 ## 🚀 Breakthrough Achievement
 
-We've successfully implemented the **Conv2d-VQ-HDP-HSMM architecture** - a groundbreaking approach to behavioral synchrony analysis that bridges discrete and continuous models with full uncertainty quantification.
+We've successfully implemented the **Conv2d-FSQ-HSMM architecture** with post-hoc clustering - a groundbreaking approach to behavioral synchrony analysis that bridges discrete and continuous models with full uncertainty quantification. **Note**: HDP layer integration was removed per ADR-001 due to performance issues, replaced with deterministic K-means/GMM clustering achieving 96.7% accuracy.
 
 ### 🎓 Research Innovation
 - **First implementation** of behavioral-dynamical coherence metric I(Z;Φ)
 - **Unified framework** bridging Feldman's discrete states and Kelso's continuous dynamics
-- **Novel architecture** combining VQ + HDP + HSMM for behavioral analysis
+- **Novel architecture** combining FSQ + Post-hoc Clustering + HSMM for behavioral analysis
 - **Clinical-grade** uncertainty quantification with confidence intervals
 
 ### 🚀 Ready for Cross-Repository Deployment

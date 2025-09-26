@@ -4,13 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the **Conv2d-VQ-HDP-HSMM** project, implementing a revolutionary architecture for behavioral synchrony analysis that bridges discrete and continuous models with full uncertainty quantification. 
+This is the **Conv2d-FSQ-HSMM** project, implementing a revolutionary architecture for behavioral synchrony analysis that bridges discrete and continuous models with full uncertainty quantification. 
 
 **Key Achievement**: Complete implementation of the unified behavioral synchrony framework combining:
-- Vector Quantization (VQ) for discrete behavioral codes
-- Hierarchical Dirichlet Process (HDP) for automatic cluster discovery
+- Finite Scalar Quantization (FSQ) for discrete behavioral codes (64 codes with [4,4,4] levels)
+- Post-hoc clustering (K-means/GMM) replacing HDP due to performance issues (see ADR-001)
 - Hidden Semi-Markov Model (HSMM) for temporal dynamics
 - Entropy-based uncertainty quantification for clinical deployment
+
+**Architecture Decision**: HDP layer integration was removed after empirical testing showed 52% accuracy drop. The current post-hoc clustering approach achieves 96.7% accuracy
 
 The architecture achieves **78.12% accuracy** on quadruped behavioral recognition and is production-ready for deployment to Hailo-8 accelerated edge devices.
 
@@ -18,7 +20,7 @@ The architecture achieves **78.12% accuracy** on quadruped behavioral recognitio
 
 ### Core Model Pipeline
 ```
-IMU Data (B,9,2,100) → Conv2d Encoder → VQ Quantization → HDP Clustering → HSMM Dynamics
+IMU Data (B,9,2,100) → Conv2d Encoder → FSQ Quantization → K-means Clustering → HSMM Dynamics
                               ↓              ↓                ↓              ↓
                          Features      Discrete Codes    Behaviors    Temporal States
                                               ↓                           ↓
@@ -35,11 +37,11 @@ IMU Data (B,9,2,100) → Conv2d Encoder → VQ Quantization → HDP Clustering �
    - Perplexity monitoring for codebook utilization
    - Hailo-safe implementation
 
-2. **Hierarchical Dirichlet Process (HDP)** (`models/hdp_components.py`):
-   - Stick-breaking construction for non-parametric clustering
-   - Automatic discovery of behavioral clusters
-   - Temperature annealing for training stability
-   - Hierarchical organization of behaviors
+2. **Post-hoc Clustering** (replacing HDP - see `docs/adr/ADR-001-drop-hdp-posthoc-clustering.md`):
+   - K-means clustering with k=12 clusters (optimal via BIC)
+   - Deterministic clustering on FSQ codes
+   - Minimum support enforcement (0.5% samples)
+   - Temporal smoothing with 7-frame median filter
 
 3. **Hidden Semi-Markov Model (HSMM)** (`models/hsmm_components.py`):
    - Explicit duration modeling (negative binomial, Poisson, Gaussian)
@@ -53,7 +55,7 @@ IMU Data (B,9,2,100) → Conv2d Encoder → VQ Quantization → HDP Clustering �
    - Mutual information I(Z;Φ) calculation
    - Confidence calibration with ECE and Brier scores
 
-5. **Complete Integration** (`models/conv2d_vq_hdp_hsmm.py`):
+5. **Complete Integration** (`models/conv2d_fsq_optimized.py`):
    - Full pipeline from IMU to behavioral analysis
    - 313K parameters (compact and efficient)
    - Multiple prediction heads
@@ -221,3 +223,4 @@ python analyze_stanford_keypoints.py
 - Models are stored with checkpoints for recovery from interruptions
 - The project uses Conv2d dimensions for Hailo-8 compatibility (Conv1d not supported)
 - remember my github credentials
+- keep documentation up to date -> COMPREHENSIVE_DOCUMENTATION.md

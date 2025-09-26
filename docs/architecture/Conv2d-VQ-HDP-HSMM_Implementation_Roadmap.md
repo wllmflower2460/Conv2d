@@ -1,5 +1,6 @@
-# Conv2d-VQ-HDP-HSMM Implementation Roadmap
+# Conv2d-FSQ-HSMM Implementation Roadmap (Post-hoc Clustering)
 *Created: 2025-09-19*
+*Updated: 2025-09-26 - Shifted from HDP to post-hoc clustering*
 *Practical step-by-step guide for implementation*
 
 ## Quick Start Checklist
@@ -61,36 +62,49 @@ quantized, vq_loss = self.vq_layer(z)  # Add VQ
 - Monitor codebook usage
 - Validate reconstruction quality
 
-### Week 2: HDP Clustering
+### Week 2: Post-hoc Clustering (Replacing HDP)
 
-#### Day 1-2: Implement Stick-Breaking
+**Note**: Based on empirical testing (ADR-001), we've shifted from HDP Layer integration to post-hoc clustering due to:
+- 52% accuracy drop with HDP integration (100% → 48.3%)
+- Unstable cluster formation (50+ micro-states)
+- Broken gradient flow between FSQ and HDP components
+
+#### Day 1-2: Implement K-means Clustering
 ```python
-def stick_breaking_weights(v, K):
-    """Generate weights from stick-breaking construction"""
-    batch_size = v.size(0)
-    weights = torch.zeros(batch_size, K)
-    remaining = torch.ones(batch_size)
+from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
+
+def post_hoc_clustering(fsq_codes, method='kmeans', k=12):
+    """Apply deterministic clustering to FSQ codes"""
+    if method == 'kmeans':
+        clusterer = KMeans(n_clusters=k, n_init=10, random_state=42)
+    elif method == 'gmm':
+        clusterer = GaussianMixture(n_components=k, random_state=42)
     
-    for k in range(K-1):
-        weights[:, k] = v[:, k] * remaining
-        remaining *= (1 - v[:, k])
-    weights[:, -1] = remaining
-    return weights
+    labels = clusterer.fit_predict(fsq_codes)
+    return labels, clusterer
 ```
 
-#### Day 3-4: HDP Layer Integration
+#### Day 3-4: Temporal Smoothing
 ```python
-class HDPLayer(nn.Module):
-    def __init__(self, input_dim, max_clusters=20):
-        super().__init__()
-        self.cluster_centers = nn.Parameter(torch.randn(max_clusters, input_dim))
-        self.concentration = nn.Parameter(torch.tensor(1.0))
+def temporal_smoothing(cluster_labels, min_dwell_ms=300, sample_rate=50):
+    """Apply temporal smoothing to cluster assignments"""
+    from scipy.signal import medfilt
+    
+    # Median filter for noise reduction
+    smoothed = medfilt(cluster_labels, kernel_size=7)
+    
+    # Enforce minimum dwell time
+    min_samples = int(min_dwell_ms * sample_rate / 1000)
+    smoothed = enforce_min_dwell(smoothed, min_samples)
+    
+    return smoothed
 ```
 
 #### Day 5: Clustering Validation
-- Visualize cluster assignments
-- Monitor active clusters
-- Check cluster coherence
+- Silhouette score analysis (target: >0.3)
+- Cluster stability across folds
+- Behavioral coherence verification
 
 ### Week 3: HSMM Implementation
 
@@ -120,14 +134,26 @@ class HSMM(nn.Module):
 
 #### Day 1-2: Combine All Components
 ```python
-class Conv2dVQHDPHSMM(nn.Module):
+class Conv2dFSQHSMM(nn.Module):
     def __init__(self):
         # Combine all modules
-        self.encoder = ...  # Existing
-        self.vq = VectorQuantizer(...)
-        self.hdp = HDPLayer(...)
-        self.hsmm = HSMM(...)
-        self.decoder = ...  # Existing
+        self.encoder = ...  # Existing Conv2d encoder
+        self.fsq = FSQ(levels=[4, 4, 4])  # 64 codes
+        # Note: No HDP layer - clustering is post-hoc
+        self.hsmm = HSMM(...)  # Optional for explicit durations
+        self.decoder = ...  # Existing decoder
+        
+    def forward(self, x):
+        # Encode
+        features = self.encoder(x)
+        fsq_codes, commitment_loss = self.fsq(features)
+        
+        # Post-hoc clustering (during evaluation)
+        # clusters = post_hoc_clustering(fsq_codes.detach())
+        
+        # Decode
+        output = self.decoder(fsq_codes)
+        return output, commitment_loss
 ```
 
 #### Day 3-4: Training Pipeline
