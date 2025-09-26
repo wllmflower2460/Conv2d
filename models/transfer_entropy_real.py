@@ -9,9 +9,13 @@ for accurate information-theoretic calculations.
 
 import numpy as np
 import torch
+import logging
 from typing import Tuple, Optional, Dict
 from scipy.stats import entropy as scipy_entropy
 from sklearn.feature_selection import mutual_info_regression
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 # Try to import JIDT for optimal performance
 try:
@@ -20,7 +24,7 @@ try:
     JIDT_AVAILABLE = True
 except ImportError:
     JIDT_AVAILABLE = False
-    print("Warning: JIDT not available. Using fallback Python implementation.")
+    logger.warning("JIDT not available. Using fallback Python implementation.")
 
 
 class TransferEntropyCalculator:
@@ -62,8 +66,8 @@ class TransferEntropyCalculator:
                 jidt_jar = "/path/to/infodynamics.jar"  # Update this path
                 startJVM(getDefaultJVMPath(), "-ea", 
                         f"-Djava.class.path={jidt_jar}")
-            except:
-                print("Failed to start JIDT. Using Python fallback.")
+            except Exception as e:
+                logger.warning(f"Failed to start JIDT: {e}. Using Python fallback.")
                 self.use_jidt = False
                 return
         
@@ -209,7 +213,7 @@ class TransferEntropyCalculator:
             try:
                 return self.calculate_te_jidt(source, target)
             except Exception as e:
-                print(f"JIDT calculation failed: {e}. Using Python fallback.")
+                logger.warning(f"JIDT calculation failed: {e}. Using Python fallback.")
                 return self.calculate_te_python(source, target)
         else:
             return self.calculate_te_python(source, target)
@@ -327,8 +331,8 @@ class BehavioralSynchronyMetrics:
 
 def test_transfer_entropy():
     """Test the Transfer Entropy implementation."""
-    print("Testing Transfer Entropy Implementation")
-    print("=" * 50)
+    logger.info("Testing Transfer Entropy Implementation")
+    logger.info("=" * 50)
     
     # Create coupled time series
     n = 1000
@@ -342,13 +346,13 @@ def test_transfer_entropy():
     metrics_calc = BehavioralSynchronyMetrics()
     results = metrics_calc.calculate_all_metrics(x, y)
     
-    print("Coupled Time Series (X drives Y):")
-    print(f"  TE(X→Y): {results['te_x_to_y']:.4f}")
-    print(f"  TE(Y→X): {results['te_y_to_x']:.4f}")
-    print(f"  Net TE: {results['net_te']:.4f}")
-    print(f"  MI(X;Y): {results['mutual_information']:.4f}")
-    print(f"  PLV: {results['phase_locking_value']:.4f}")
-    print(f"  Synchrony Index: {results['synchrony_index']:.4f}")
+    logger.info("Coupled Time Series (X drives Y):")
+    logger.info(f"  TE(X→Y): {results['te_x_to_y']:.4f}")
+    logger.info(f"  TE(Y→X): {results['te_y_to_x']:.4f}")
+    logger.info(f"  Net TE: {results['net_te']:.4f}")
+    logger.info(f"  MI(X;Y): {results['mutual_information']:.4f}")
+    logger.info(f"  PLV: {results['phase_locking_value']:.4f}")
+    logger.info(f"  Synchrony Index: {results['synchrony_index']:.4f}")
     
     # Test with independent signals
     x_indep = np.random.randn(n)
@@ -356,22 +360,28 @@ def test_transfer_entropy():
     
     results_indep = metrics_calc.calculate_all_metrics(x_indep, y_indep)
     
-    print("\nIndependent Time Series:")
-    print(f"  TE(X→Y): {results_indep['te_x_to_y']:.4f}")
-    print(f"  TE(Y→X): {results_indep['te_y_to_x']:.4f}")
-    print(f"  Net TE: {results_indep['net_te']:.4f}")
-    print(f"  MI(X;Y): {results_indep['mutual_information']:.4f}")
-    print(f"  PLV: {results_indep['phase_locking_value']:.4f}")
-    print(f"  Synchrony Index: {results_indep['synchrony_index']:.4f}")
+    logger.info("\nIndependent Time Series:")
+    logger.info(f"  TE(X→Y): {results_indep['te_x_to_y']:.4f}")
+    logger.info(f"  TE(Y→X): {results_indep['te_y_to_x']:.4f}")
+    logger.info(f"  Net TE: {results_indep['net_te']:.4f}")
+    logger.info(f"  MI(X;Y): {results_indep['mutual_information']:.4f}")
+    logger.info(f"  PLV: {results_indep['phase_locking_value']:.4f}")
+    logger.info(f"  Synchrony Index: {results_indep['synchrony_index']:.4f}")
     
     # Validation
     if results['net_te'] > results_indep['net_te']:
-        print("\n✓ Transfer Entropy correctly identifies directional coupling!")
+        logger.info("\n✓ Transfer Entropy correctly identifies directional coupling!")
     else:
-        print("\n⚠ Transfer Entropy calculation may need tuning")
+        logger.warning("\n⚠ Transfer Entropy calculation may need tuning")
     
-    print("\n✓ Real Transfer Entropy implementation complete - D1 requirement addressed")
+    logger.info("\n✓ Real Transfer Entropy implementation complete - D1 requirement addressed")
 
 
 if __name__ == "__main__":
+    # Configure logging for standalone execution
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
     test_transfer_entropy()
