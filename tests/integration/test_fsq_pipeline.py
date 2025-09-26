@@ -3,11 +3,10 @@
 Integration test suite for Conv2d-FSQ pipeline.
 Tests the complete pipeline from IMU input to behavioral analysis output.
 Addresses D1 review requirement for comprehensive integration testing.
-"""
 
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+Note: Install package in development mode before running tests:
+    pip install -e .
+"""
 
 import pytest
 import torch
@@ -17,7 +16,8 @@ import json
 import tempfile
 from typing import Dict, Tuple
 
-# Import models and components
+# Import models and components using proper package imports
+# These will work after installing with: pip install -e .
 from models.conv2d_fsq_optimized import Conv2dFSQOptimized
 from models.transfer_entropy_real import BehavioralSynchronyMetrics
 from preprocessing.enhanced_pipeline import EnhancedMovementDataset
