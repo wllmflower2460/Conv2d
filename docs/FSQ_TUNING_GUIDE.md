@@ -482,12 +482,13 @@ def ab_test_fsq_configs(config_a, config_b, test_data, duration_hours=24):
 
 ```bash
 # Quick FSQ configuration test
-python -c "
-from models.conv2d_fsq_optimized import Conv2dFSQOptimized
-model = Conv2dFSQOptimized(fsq_levels=[4,4,4])
-print(f'Codebook size: {model.fsq.codebook_size}')
-print(f'Model params: {sum(p.numel() for p in model.parameters()):,}')
-"
+python scripts/quick_fsq_test.py
+
+# Test with custom levels
+python scripts/quick_fsq_test.py --levels 8 6 5
+
+# Verbose output with details
+python scripts/quick_fsq_test.py --levels 4 4 4 --verbose
 
 # Validate configuration
 python scripts/validate_fsq_real_data.py \
