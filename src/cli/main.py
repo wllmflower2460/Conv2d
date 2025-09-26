@@ -50,6 +50,7 @@ from .commands import (
     evaluate,
     pack
 )
+from ..conv2d.contracts import validate_contracts_cli, get_contract_info
 from .qa_gates import QAGate, QAResult
 from .utils import setup_logging, load_config
 
@@ -571,86 +572,190 @@ def evaluate_cmd(
 
 @app.command()
 def pack(
-    model_dir: Path = typer.Argument(
+    config: Path = typer.Argument(
         ...,
-        help="Model directory to package",
+        help="Configuration file (YAML)",
         exists=True
     ),
-    output_file: Path = typer.Argument(
+    metrics: Path = typer.Argument(
         ...,
-        help="Output package file (.tar.gz)"
+        help="Metrics file (JSON)",
+        exists=True
     ),
-    eval_dir: Optional[Path] = typer.Option(
-        None, "--eval", "-e",
-        help="Include evaluation results"
+    model: Path = typer.Argument(
+        ...,
+        help="Model file or directory",
+        exists=True
     ),
     format: str = typer.Option(
         "onnx", "--format", "-f",
-        help="Export format (onnx/coreml/hailo)"
+        help="Model format (onnx/coreml/hailo)"
     ),
-    compress: bool = typer.Option(
-        True, "--compress/--no-compress",
-        help="Compress package"
+    output_dir: Path = typer.Option(
+        Path("artifacts"), "--output-dir", "-o",
+        help="Output directory for artifact bundle"
+    ),
+    name: Optional[str] = typer.Option(
+        None, "--name", "-n",
+        help="Bundle name (optional)"
     )
 ):
     """
-    Bundle model for deployment.
+    Create standardized artifact bundle for deployment.
     
-    Package includes:
-    - Trained model weights
-    - Configuration files
-    - Preprocessing pipeline
-    - Evaluation metrics
-    - Deployment scripts
+    Creates artifacts/EXP_HASH/ directory with:
+    - config.yaml (experiment configuration)
+    - metrics.json (evaluation results)
+    - label_map.json (frozen behavioral labels)
+    - model.onnx/coreml.mlpackage/hailo.hef (model file)
+    - VERSION (git version)
+    - COMMIT_SHA (git commit)
     """
     console.print(Panel.fit(
-        f"[bold cyan]Deployment Package[/bold cyan]\n"
-        f"Model: {model_dir.name}\n"
-        f"Format: {format.upper()}\n"
-        f"Compression: {'Yes' if compress else 'No'}",
+        f"[bold cyan]Artifact Bundle[/bold cyan]\n"
+        f"Config: {config.name}\n"
+        f"Metrics: {metrics.name}\n"
+        f"Model: {model.name} ({format})\n"
+        f"Output: {output_dir}/",
         title="📦 Packaging"
     ))
     
-    with console.status("[cyan]Creating deployment package...") as status:
-        # Create package
-        package_info = pack.create_package(
-            model_dir, eval_dir, format, compress
-        )
-        
-        # Save package
-        pack.save_package(output_file, package_info)
+    with console.status("[cyan]Creating artifact bundle...") as status:
+        try:
+            # Create bundle
+            bundle = pack.create_bundle(
+                config_path=config,
+                metrics_path=metrics,
+                model_path=model,
+                model_format=format,
+                output_dir=output_dir,
+                bundle_name=name
+            )
+            
+            # Get bundle info
+            bundle_info = bundle.get_info()
+            
+        except Exception as e:
+            console.print(f"[red]❌ Bundle creation failed: {e}[/red]")
+            raise typer.Exit(code=1)
     
-    # Display package contents
-    table = Table(title="Package Contents")
-    table.add_column("Component", style="cyan")
+    # Display bundle contents
+    table = Table(title="Bundle Contents")
+    table.add_column("File", style="cyan")
     table.add_column("Size", style="yellow")
-    table.add_column("Hash", style="dim")
+    table.add_column("Type", style="dim")
     
-    for component in package_info['contents']:
-        table.add_row(
-            component['name'],
-            component['size'],
-            component['hash'][:8]
-        )
+    for filename, info in bundle_info['files'].items():
+        if isinstance(info, dict) and 'size' in info:
+            size = pack.format_size(info['size'])
+            file_type = info.get('type', 'file')
+        else:
+            size = "-"
+            file_type = info.get('type', 'directory')
+        
+        table.add_row(filename, size, file_type)
     
     console.print(table)
     
     # Display deployment info
+    model_formats_str = ", ".join(bundle_info['model_formats'])
     info_panel = Panel.fit(
-        f"[bold]Deployment Ready![/bold]\n\n"
-        f"Package: {output_file}\n"
-        f"Size: {package_info['total_size']}\n"
-        f"Hash: {package_info['package_hash']}\n"
-        f"Format: {format.upper()}\n\n"
-        f"[dim]Deploy with:[/dim]\n"
-        f"  scp {output_file} edge-device:/models/\n"
-        f"  ssh edge-device 'cd /models && tar -xzf {output_file.name}'",
-        title="🚀 Deployment Info",
+        f"[bold]Artifact Bundle Ready![/bold]\n\n"
+        f"Bundle Hash: {bundle.bundle_hash}\n"
+        f"Directory: {bundle.bundle_dir}\n"
+        f"Model Formats: {model_formats_str}\n"
+        f"Created: {bundle_info.get('created_at', 'unknown')}\n\n"
+        f"[dim]Verify with:[/dim]\n"
+        f"  conv2d pack verify {bundle.bundle_hash}\n\n"
+        f"[dim]Archive with:[/dim]\n"
+        f"  conv2d pack archive {bundle.bundle_hash}",
+        title="🚀 Bundle Info",
         border_style="green"
     )
     console.print(info_panel)
     
-    console.print(f"[green]✓ Package created successfully![/green]")
+    console.print(f"[green]✓ Bundle created: {bundle.bundle_hash}[/green]")
+
+@app.command(name="validate-contracts")
+def validate_contracts(
+    input_file: Path = typer.Argument(
+        ...,
+        help="Input file to validate (.pt or .npy)",
+        exists=True
+    ),
+    strict: bool = typer.Option(
+        True, "--strict/--no-strict",
+        help="Enable strict validation mode"
+    )
+):
+    """
+    Validate pipeline contracts against test data.
+    
+    Validates that input data conforms to the FROZEN pipeline contracts
+    defined in docs/contracts.md. This ensures compatibility with
+    production deployment and prevents interface drift.
+    """
+    console.print(Panel.fit(
+        "[bold cyan]Contract Validation[/bold cyan]\n"
+        f"Input: {input_file}\n"
+        f"Strict: {'Yes' if strict else 'No'}",
+        title="🔒 Contract Enforcement"
+    ))
+    
+    success = validate_contracts_cli(str(input_file), strict=strict)
+    
+    if success:
+        console.print("[green]✅ All contracts validated successfully![/green]")
+    else:
+        console.print("[red]❌ Contract validation failed![/red]")
+        raise typer.Exit(code=4)  # Configuration/contract error
+
+@app.command(name="contract-info")
+def contract_info():
+    """
+    Display information about frozen pipeline contracts.
+    
+    Shows the current contract specifications including shapes,
+    data types, and validation rules. All contracts are FROZEN
+    for production stability.
+    """
+    console.print(Panel.fit(
+        "[bold cyan]Pipeline Contracts[/bold cyan]\n"
+        "Displaying FROZEN contract specifications",
+        title="🔒 Contract Information"
+    ))
+    
+    info = get_contract_info()
+    
+    # Display contract summary
+    table = Table(title="Contract Summary")
+    table.add_column("Component", style="cyan")
+    table.add_column("Status", style="green") 
+    table.add_column("Version", style="yellow")
+    
+    table.add_row("Input", "FROZEN", info["version"])
+    table.add_row("FSQ Encoding", "FROZEN", info["version"])
+    table.add_row("Clustering", "FROZEN", info["version"])
+    table.add_row("Temporal Smoothing", "FROZEN", info["version"])
+    table.add_row("Label Mapping", "FROZEN", info["version"])
+    
+    console.print(table)
+    
+    # Display key specifications
+    specs_panel = Panel.fit(
+        f"[bold]Key Specifications:[/bold]\n\n"
+        f"Input Shape: {info['contracts']['input']['shape']}\n"
+        f"Input Dtype: {info['contracts']['input']['dtype']}\n"
+        f"FSQ Levels: {info['contracts']['fsq']['levels']}\n"
+        f"Codebook Size: {info['contracts']['fsq']['codebook_size']}\n"
+        f"Default Clusters: {info['contracts']['clustering']['default_clusters']}\n"
+        f"Label Cardinality: {info['contracts']['labels']['cardinality']}\n"
+        f"Validation Enabled: {'Yes' if info['validation_enabled'] else 'No'}\n\n"
+        f"[dim]See docs/contracts.md for complete specification[/dim]",
+        title="📋 Contract Details",
+        border_style="blue"
+    )
+    console.print(specs_panel)
 
 if __name__ == "__main__":
     app()

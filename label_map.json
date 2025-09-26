@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "frozen": true,
+  "last_updated": "2025-09-26",
+  "label_map": {
+    "0": "rest",
+    "1": "walk_slow",
+    "2": "walk_normal", 
+    "3": "walk_fast",
+    "4": "trot",
+    "5": "run",
+    "6": "turn_left",
+    "7": "turn_right",
+    "8": "sit", 
+    "9": "lie_down",
+    "10": "play",
+    "11": "other"
+  },
+  "cardinality": 12,
+  "reserved_ids": [11],
+  "description": "Frozen behavioral motif labels for production deployment. DO NOT MODIFY - breaking changes require major version bump."
+}

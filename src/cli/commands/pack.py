@@ -1,104 +1,90 @@
-"""Deployment packaging command implementation."""
+"""Deployment packaging command implementation with standardized artifact bundles."""
 
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-import tarfile
-import hashlib
 import json
 import os
+import yaml
+
+from ...conv2d.packaging import ArtifactBundle
 
 
-def create_package(
-    model_dir: Path,
-    eval_dir: Optional[Path],
-    format: str,
-    compress: bool
-) -> Dict[str, Any]:
-    """Create deployment package."""
-    contents = []
+def create_bundle(
+    config_path: Path,
+    metrics_path: Path,
+    model_path: Path,
+    model_format: str,
+    output_dir: Path = Path("artifacts"),
+    bundle_name: Optional[str] = None
+) -> ArtifactBundle:
+    """Create standardized artifact bundle."""
     
-    # Add model files
-    model_files = list(model_dir.glob("*.pth")) + list(model_dir.glob("*.onnx"))
-    for file in model_files:
-        size = os.path.getsize(file)
-        file_hash = calculate_file_hash(file)
-        contents.append({
-            'name': file.name,
-            'path': str(file),
-            'size': format_size(size),
-            'hash': file_hash
-        })
+    # Load config and metrics
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
     
-    # Add evaluation results if provided
-    if eval_dir and eval_dir.exists():
-        eval_files = list(eval_dir.glob("*"))
-        for file in eval_files:
-            if file.is_file():
-                size = os.path.getsize(file)
-                file_hash = calculate_file_hash(file)
-                contents.append({
-                    'name': f"eval/{file.name}",
-                    'path': str(file),
-                    'size': format_size(size),
-                    'hash': file_hash
-                })
+    with open(metrics_path, 'r') as f:
+        metrics = json.load(f)
     
-    # Calculate total size
-    total_bytes = sum(os.path.getsize(c['path']) for c in contents if os.path.exists(c['path']))
+    # Create bundle
+    bundle = ArtifactBundle.create(
+        config=config,
+        metrics=metrics,
+        model_path=model_path,
+        model_format=model_format,
+        output_dir=output_dir,
+        bundle_name=bundle_name
+    )
     
-    # Generate package hash
-    package_hash = hashlib.md5(
-        "".join([c['hash'] for c in contents]).encode()
-    ).hexdigest()
-    
-    return {
-        'contents': contents,
-        'total_size': format_size(total_bytes),
-        'package_hash': package_hash,
-        'format': format,
-        'compressed': compress
-    }
+    return bundle
 
 
-def save_package(output_file: Path, package_info: Dict[str, Any]):
-    """Save deployment package to tar.gz."""
-    output_file.parent.mkdir(parents=True, exist_ok=True)
+def verify_bundle(bundle_hash: str, artifacts_dir: Path = Path("artifacts")) -> Dict[str, Any]:
+    """Verify artifact bundle structure and contents."""
+    bundle_dir = artifacts_dir / bundle_hash
     
-    # Create tar archive
-    mode = 'w:gz' if package_info['compressed'] else 'w'
-    
-    with tarfile.open(output_file, mode) as tar:
-        # Add all files
-        for item in package_info['contents']:
-            if os.path.exists(item['path']):
-                arcname = item['name']
-                tar.add(item['path'], arcname=arcname)
-        
-        # Add manifest
-        manifest = {
-            'package_hash': package_info['package_hash'],
-            'format': package_info['format'],
-            'contents': [
-                {'name': c['name'], 'hash': c['hash'], 'size': c['size']}
-                for c in package_info['contents']
-            ]
+    if not bundle_dir.exists():
+        return {
+            "valid": False,
+            "errors": [f"Bundle not found: {bundle_hash}"]
         }
-        
-        manifest_path = output_file.parent / "manifest.json"
-        with open(manifest_path, 'w') as f:
-            json.dump(manifest, f, indent=2)
-        
-        tar.add(manifest_path, arcname="manifest.json")
-        manifest_path.unlink()  # Clean up temp file
+    
+    bundle = ArtifactBundle(bundle_dir)
+    return bundle.verify()
 
 
-def calculate_file_hash(file_path: Path) -> str:
-    """Calculate MD5 hash of file."""
-    hasher = hashlib.md5()
-    with open(file_path, 'rb') as f:
-        for chunk in iter(lambda: f.read(4096), b''):
-            hasher.update(chunk)
-    return hasher.hexdigest()
+def list_bundles(artifacts_dir: Path = Path("artifacts")) -> List[Dict[str, Any]]:
+    """List all available artifact bundles."""
+    return ArtifactBundle.list_bundles(artifacts_dir)
+
+
+def archive_bundle(
+    bundle_hash: str,
+    format: str = "tar.gz",
+    artifacts_dir: Path = Path("artifacts")
+) -> Path:
+    """Archive bundle to compressed file."""
+    bundle_dir = artifacts_dir / bundle_hash
+    
+    if not bundle_dir.exists():
+        raise FileNotFoundError(f"Bundle not found: {bundle_hash}")
+    
+    bundle = ArtifactBundle(bundle_dir)
+    return bundle.archive(format)
+
+
+def get_bundle_info(bundle_hash: str, artifacts_dir: Path = Path("artifacts")) -> Dict[str, Any]:
+    """Get detailed bundle information."""
+    bundle_dir = artifacts_dir / bundle_hash
+    
+    if not bundle_dir.exists():
+        return {
+            "exists": False,
+            "error": f"Bundle not found: {bundle_hash}"
+        }
+    
+    bundle = ArtifactBundle(bundle_dir)
+    return bundle.get_info()
 
 
 def format_size(n_bytes: int) -> str:
