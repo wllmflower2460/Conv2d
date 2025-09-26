@@ -124,7 +124,8 @@ class OptimizedFSQ(nn.Module):
         
         # Count occurrences efficiently with bincount
         counts = torch.bincount(codes_flat, minlength=self.num_codes)
-        self.code_usage += counts.float()
+        # Use in-place operations to avoid unnecessary tensor allocation
+        self.code_usage.add_(counts.float())
         self.total_samples += codes_flat.numel()
         
     def get_usage_stats(self) -> Dict[str, float]:
@@ -137,8 +138,7 @@ class OptimizedFSQ(nn.Module):
             }
         
         # Normalize usage counts
-        probs = self.code_usage / self.total_samples
-        probs = probs + 1e-10  # Avoid log(0)
+        probs = self.code_usage.div(self.total_samples).add_(1e-10)  # Efficient chain
         
         # Calculate metrics
         used_codes = (self.code_usage > 0).sum().item()
