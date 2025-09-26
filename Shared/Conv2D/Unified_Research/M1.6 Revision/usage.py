@@ -67,18 +67,27 @@ class CodebookUsageAnalyzer:
         """
         Convert per-dimension codes to joint indices.
         
+        Vectorized implementation using numpy's dot product
+        for better performance with large batches.
+        
         Args:
             codes: Per-dimension codes (B, D)
             
         Returns:
             joint_indices: Joint codebook indices (B,)
         """
-        joint_indices = np.zeros(codes.shape[0], dtype=int)
-        multiplier = 1
+        # Convert to numpy once (avoid repeated conversions in loop)
+        codes_np = codes.cpu().numpy()
         
-        for d in range(self.dim - 1, -1, -1):
-            joint_indices += codes[:, d].cpu().numpy() * multiplier
-            multiplier *= self.levels[d]
+        # Compute multipliers for each dimension (vectorized)
+        # For levels [L0, L1, L2], multipliers are [L1*L2, L2, 1]
+        multipliers = np.ones(self.dim, dtype=np.int64)
+        for d in range(self.dim - 2, -1, -1):
+            multipliers[d] = multipliers[d + 1] * self.levels[d + 1]
+        
+        # Vectorized computation using dot product
+        # This replaces the loop: sum(codes[i] * multiplier[i] for all i)
+        joint_indices = np.dot(codes_np, multipliers).astype(np.int64)
         
         return joint_indices
     
