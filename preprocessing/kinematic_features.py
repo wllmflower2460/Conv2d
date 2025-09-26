@@ -394,19 +394,40 @@ class KinematicFeatureExtractor:
         return plv
 
     def _compute_dtw_distance(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        """Simplified DTW distance computation."""
-        # Note: Full DTW is computationally expensive
-        # Using a simplified version based on cumulative distance
-
-        # Vectorized Euclidean distance computation
-        # Compute squared differences for all batches at once
-        diff_squared = (x - y) ** 2
+        """
+        Simplified DTW distance computation using vectorized Euclidean distance.
         
-        # Sum over channel dimension and take sqrt
-        distances = torch.sqrt(torch.sum(diff_squared, dim=1))
+        Note: This is a simplified version. Full DTW is computationally expensive.
         
-        # Mean over time dimension
-        return torch.mean(distances, dim=1)
+        Args:
+            x, y: Tensors of shape (B, C, T) where B=batch, C=channels, T=time
+            
+        Returns:
+            Mean Euclidean distance over time for each batch: shape (B,)
+        """
+        # Ensure input shapes match for element-wise operations
+        assert x.shape == y.shape, f"Shape mismatch: x={x.shape}, y={y.shape}"
+        
+        # Use torch.no_grad() if gradients are not needed
+        # For training, gradients will flow automatically
+        # Check if we're in training mode (if object has training attribute)
+        requires_grad = x.requires_grad or y.requires_grad
+        
+        if not requires_grad:
+            with torch.no_grad():
+                # Method 2: Using torch.linalg.vector_norm for better numerical stability
+                # This is clearer in intent and handles edge cases better
+                distances = torch.linalg.vector_norm(x - y, ord=2, dim=1)
+                
+                # Mean over time dimension
+                return torch.mean(distances, dim=1)
+        else:
+            # Gradients required - compute normally
+            # Method 2: Using torch.linalg.vector_norm for better numerical stability
+            distances = torch.linalg.vector_norm(x - y, ord=2, dim=1)
+            
+            # Mean over time dimension
+            return torch.mean(distances, dim=1)
 
     def _estimate_mutual_information(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """Estimate mutual information using binning."""
