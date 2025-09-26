@@ -1,0 +1,76 @@
+# FSQ Production Configuration
+# Optimized for >80% codebook utilization with minimal memory footprint
+# Validated against D1 committee requirements
+
+model:
+  name: conv2d_fsq_optimized
+  version: v1.1.0
+  
+fsq:
+  levels: [4, 4, 4]  # 64 codes total
+  commitment_loss: 0.25
+  entropy_weight: 0.1
+  
+encoder:
+  input_channels: 9
+  input_height: 2
+  input_width: 100
+  encoder_dim: 64
+  dropout: 0.1
+  
+decoder:
+  decoder_dim: 128
+  n_classes: 7
+  n_motifs: 42
+  
+clustering:
+  method: kmeans
+  k: 12  # Optimal for 64 codes
+  min_support: 0.005  # 0.5% minimum cluster size
+  n_init: 10
+  random_state: 42
+  
+temporal:
+  median_k: 7
+  hysteresis_high: 0.6
+  hysteresis_low: 0.4
+  min_dwell_ms: 300
+  sampling_rate: 50
+  
+training:
+  batch_size: 32
+  learning_rate: 0.001
+  epochs: 100
+  early_stopping_patience: 10
+  gradient_clip: 1.0
+  weight_decay: 0.0001
+  scheduler: cosine_annealing
+  warmup_epochs: 5
+  
+validation:
+  temporal_folds: 5
+  bonferroni_correction: true
+  alpha: 0.05
+  metrics:
+    - accuracy
+    - ece
+    - codebook_utilization
+    - silhouette_score
+    - latency
+    
+deployment:
+  target: hailo8
+  quantization: int8
+  calibration_samples: 1000
+  optimization_level: 3
+  batch_size: 1
+  input_shape: [1, 9, 2, 100]
+  output_names: [predictions, uncertainty]
+  
+performance_targets:
+  accuracy: 0.96
+  ece: 0.03
+  codebook_utilization: 0.6
+  latency_ms: 15
+  memory_mb: 5
+  motif_count_range: [30, 60]

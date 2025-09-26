@@ -1,0 +1,114 @@
+# FSQ Research Configuration
+# Extended configuration for research and exploration
+# Prioritizes expressiveness and flexibility over efficiency
+
+model:
+  name: conv2d_fsq_research
+  version: v2.0.0-experimental
+  
+fsq:
+  levels: [8, 6, 5, 5, 4]  # 4,800 codes for exploration
+  commitment_loss: 0.1  # Lower for more exploration
+  entropy_weight: 0.2  # Higher for uncertainty research
+  use_ema: true  # Exponential moving average
+  ema_decay: 0.99
+  
+encoder:
+  input_channels: 9
+  input_height: 2
+  input_width: 200  # Longer windows for context
+  encoder_dim: 128  # Larger encoding space
+  dropout: 0.2  # More regularization
+  activation: gelu  # Advanced activation
+  use_attention: true  # Enable attention mechanisms
+  
+decoder:
+  decoder_dim: 256  # Larger decoder capacity
+  n_classes: 12  # More fine-grained classes
+  n_motifs: 100  # Many motifs for discovery
+  use_residual: true  # Residual connections
+  
+clustering:
+  method: gmm  # Gaussian Mixture Model for soft assignments
+  k_range: [4, 30]  # Search range for optimal K
+  selection_criterion: bic  # Bayesian Information Criterion
+  min_support: 0.001  # 0.1% minimum for rare behaviors
+  n_init: 20  # More initializations
+  covariance_type: full  # Full covariance matrices
+  random_state: 42
+  
+temporal:
+  method: hsmm  # Hidden Semi-Markov Model
+  duration_model: negative_binomial
+  max_duration: 100
+  transition_prior: dirichlet
+  alpha: 1.0  # Dirichlet concentration
+  
+training:
+  batch_size: 16  # Smaller batches for gradient quality
+  learning_rate: 0.0005  # Lower LR for stability
+  epochs: 500  # Many epochs with early stopping
+  early_stopping_patience: 25
+  gradient_clip: 0.5  # Tighter clipping
+  weight_decay: 0.00001  # Minimal weight decay
+  scheduler: cosine_annealing_warm_restarts
+  T_0: 50  # Restart period
+  T_mult: 2  # Period multiplication factor
+  warmup_epochs: 10
+  
+augmentation:
+  time_warp: 0.1
+  magnitude_warp: 0.1
+  noise_level: 0.05
+  dropout_prob: 0.1
+  
+validation:
+  temporal_folds: 10  # More folds for robustness
+  bonferroni_correction: true
+  alpha: 0.01  # Stricter significance
+  bootstrap_iterations: 1000  # Bootstrap confidence intervals
+  metrics:
+    - accuracy
+    - ece
+    - brier_score
+    - codebook_utilization
+    - perplexity
+    - silhouette_score
+    - davies_bouldin_score
+    - mutual_information
+    - entropy
+    - latency
+    
+analysis:
+  compute_tsne: true
+  compute_umap: true
+  compute_pca: true
+  n_components: 3
+  perplexity: 30
+  n_neighbors: 15
+  
+deployment:
+  target: research_gpu  # GPU for research
+  quantization: fp16  # Half precision for speed
+  calibration_samples: 5000  # More calibration data
+  optimization_level: 2  # Moderate optimization
+  batch_size: 32  # Batch processing
+  input_shape: [32, 9, 2, 200]
+  output_names: [predictions, uncertainty, attention_weights, fsq_codes]
+  
+performance_targets:
+  accuracy: 0.98  # High accuracy target
+  ece: 0.02  # Strict calibration
+  codebook_utilization: 0.4  # Lower expected utilization
+  latency_ms: 50  # Relaxed for research
+  memory_mb: 50  # More memory allowed
+  motif_count_range: [50, 100]
+  
+logging:
+  tensorboard: true
+  wandb: true
+  log_frequency: 10  # Log every 10 batches
+  save_checkpoints: true
+  checkpoint_frequency: 10  # Save every 10 epochs
+  profile_memory: true
+  profile_computation: true

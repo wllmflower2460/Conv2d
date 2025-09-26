@@ -398,15 +398,15 @@ class KinematicFeatureExtractor:
         # Note: Full DTW is computationally expensive
         # Using a simplified version based on cumulative distance
 
-        B = x.shape[0]
-        distances = []
-
-        for b in range(B):
-            # Euclidean distance between sequences
-            dist = torch.sqrt(torch.sum((x[b] - y[b])**2, dim=0)).mean()
-            distances.append(dist)
-
-        return torch.tensor(distances, device=x.device)
+        # Vectorized Euclidean distance computation
+        # Compute squared differences for all batches at once
+        diff_squared = (x - y) ** 2
+        
+        # Sum over channel dimension and take sqrt
+        distances = torch.sqrt(torch.sum(diff_squared, dim=1))
+        
+        # Mean over time dimension
+        return torch.mean(distances, dim=1)
 
     def _estimate_mutual_information(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """Estimate mutual information using binning."""

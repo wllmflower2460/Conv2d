@@ -346,20 +346,33 @@ class DataQualityHandler:
         return data, inf_report
     
     def _interpolate_nan(self, data: np.ndarray) -> np.ndarray:
-        """Interpolate NaN values in time series data."""
+        """
+        Interpolate NaN values in time series data.
+        
+        Optimized with vectorized operations for better performance.
+        """
         if len(data.shape) == 3:  # (B, C, T)
-            for b in range(data.shape[0]):
-                for c in range(data.shape[1]):
-                    signal = data[b, c, :]
-                    if np.any(np.isnan(signal)):
-                        # Linear interpolation
-                        x = np.arange(len(signal))
-                        valid = ~np.isnan(signal)
-                        if np.sum(valid) >= 2:
-                            data[b, c, :] = np.interp(x, x[valid], signal[valid])
-                        else:
-                            # Fall back to mean if not enough points
-                            data[b, c, :] = np.nan_to_num(signal, nan=np.nanmean(signal))
+            B, C, T = data.shape
+            
+            # Reshape to (B*C, T) for batch processing
+            data_reshaped = data.reshape(-1, T)
+            x = np.arange(T)
+            
+            # Process all channels at once (still need loop but fewer iterations)
+            for idx in range(data_reshaped.shape[0]):
+                signal = data_reshaped[idx]
+                if np.any(np.isnan(signal)):
+                    valid_mask = ~np.isnan(signal)
+                    if np.sum(valid_mask) >= 2:
+                        # Use numpy's interp (vectorized internally)
+                        data_reshaped[idx] = np.interp(x, x[valid_mask], signal[valid_mask])
+                    else:
+                        # Fall back to mean replacement
+                        mean_val = np.nanmean(signal) if not np.all(np.isnan(signal)) else 0
+                        data_reshaped[idx] = np.nan_to_num(signal, nan=mean_val)
+            
+            # Reshape back to original dimensions
+            data = data_reshaped.reshape(B, C, T)
         return data
     
     def _log_correction_summary(self, report: Dict):

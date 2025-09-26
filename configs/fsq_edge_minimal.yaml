@@ -1,0 +1,75 @@
+# FSQ Edge Minimal Configuration
+# Ultra-lightweight configuration for resource-constrained edge devices
+# Prioritizes efficiency over expressiveness
+
+model:
+  name: conv2d_fsq_minimal
+  version: v1.0.0
+  
+fsq:
+  levels: [4, 4]  # Only 16 codes
+  commitment_loss: 0.25
+  entropy_weight: 0.05  # Reduced for simplicity
+  
+encoder:
+  input_channels: 9
+  input_height: 2
+  input_width: 100
+  encoder_dim: 32  # Reduced dimensionality
+  dropout: 0.05  # Minimal dropout
+  
+decoder:
+  decoder_dim: 64  # Smaller decoder
+  n_classes: 7
+  n_motifs: 16  # Fewer motifs
+  
+clustering:
+  method: kmeans
+  k: 8  # Fewer clusters for 16 codes
+  min_support: 0.01  # 1% minimum cluster size
+  n_init: 5  # Fewer initializations
+  random_state: 42
+  
+temporal:
+  median_k: 5  # Smaller filter
+  hysteresis_high: 0.65
+  hysteresis_low: 0.35
+  min_dwell_ms: 200  # Shorter dwell
+  sampling_rate: 50
+  
+training:
+  batch_size: 64  # Larger batches for efficiency
+  learning_rate: 0.002
+  epochs: 50  # Fewer epochs
+  early_stopping_patience: 5
+  gradient_clip: 1.0
+  weight_decay: 0.0005
+  scheduler: step
+  step_size: 20
+  gamma: 0.5
+  
+validation:
+  temporal_folds: 3  # Fewer folds for speed
+  bonferroni_correction: false  # Skip for simplicity
+  alpha: 0.05
+  metrics:
+    - accuracy
+    - codebook_utilization
+    - latency
+    
+deployment:
+  target: edge_cpu  # CPU-only deployment
+  quantization: int8
+  calibration_samples: 500
+  optimization_level: 4  # Maximum optimization
+  batch_size: 1
+  input_shape: [1, 9, 2, 100]
+  output_names: [predictions]  # No uncertainty for speed
+  
+performance_targets:
+  accuracy: 0.94  # Slightly lower target
+  ece: 0.05  # Relaxed calibration
+  codebook_utilization: 0.9  # High utilization expected
+  latency_ms: 10  # Strict latency requirement
+  memory_mb: 2  # Minimal memory
+  motif_count_range: [8, 16]
