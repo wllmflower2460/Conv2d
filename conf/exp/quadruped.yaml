@@ -1,0 +1,70 @@
+# Quadruped behavioral analysis experiment
+# @package _global_
+
+defaults:
+  - override /model: conv2d_fsq_hsmm
+  - override /training: standard
+
+experiment:
+  name: quadruped_behavioral_sync
+  tags: [quadruped, behavioral, synchrony]
+  notes: "Cross-species behavioral synchrony analysis"
+
+data:
+  dataset_name: quadruped
+  dataset_path: ${paths.data_dir}/quadruped_sync
+  
+  # Quadruped-specific settings
+  num_keypoints: 24
+  num_subjects: 2  # Dog + Human
+  
+  preprocessing:
+    window_size: 100
+    step_size: 25
+    sampling_rate: 100.0
+    normalize: true
+    
+  # Data splits
+  splits:
+    train: 0.7
+    val: 0.15
+    test: 0.15
+    
+model:
+  # Override FSQ levels for quadruped
+  fsq_levels: [8, 6, 5]  # 240 behavioral codes
+  embedding_dim: 64
+  
+  # HSMM settings for behavioral states
+  hsmm:
+    num_states: 32
+    duration_type: negative_binomial
+    
+training:
+  epochs: 200
+  batch_size: 32
+  
+  # Learning rate for behavioral model
+  optimization:
+    learning_rate: 5e-4
+    scheduler:
+      type: cosine
+      warmup_epochs: 10
+      
+  # Early stopping for behavioral convergence
+  evaluation:
+    early_stopping:
+      patience: 30
+      min_delta: 1e-4
+      
+# Metrics specific to behavioral analysis
+metrics:
+  behavioral:
+    - synchrony_score
+    - phase_coherence
+    - mutual_information
+    - behavioral_entropy
+  standard:
+    - accuracy
+    - f1_score
+    - confusion_matrix

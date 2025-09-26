@@ -1,0 +1,139 @@
+# Conv2d CLI Configuration Example
+# ================================
+# This file contains example configurations for the Conv2d pipeline
+
+# Preprocessing Configuration
+preprocess:
+  window_size: 100          # Sliding window size in frames
+  stride: 50                # Window stride (50% overlap)
+  check_quality: true       # Enable QA gates
+  
+  # Data quality thresholds
+  quality_thresholds:
+    max_nan_percent: 5.0
+    max_outlier_percent: 10.0
+    min_samples: 1000
+    max_discontinuities: 100
+  
+  # Outlier detection
+  outlier_detection:
+    method: "mad"           # median absolute deviation
+    threshold: 5.0          # z-score threshold
+
+# Training Configuration
+training:
+  architecture: "conv2d-fsq"  # conv2d-vq, conv2d-fsq, or tcn-vae
+  epochs: 100
+  batch_size: 32
+  learning_rate: 0.001
+  
+  # Early stopping
+  early_stopping:
+    patience: 10
+    min_delta: 0.001
+    
+  # Learning rate schedule
+  lr_schedule:
+    type: "cosine"          # cosine, step, exponential
+    warmup_epochs: 5
+
+# FSQ Encoding Configuration
+fsq:
+  levels: [4, 4, 4]         # 64 total codes
+  temperature: 1.0
+  
+  # Codebook settings
+  codebook:
+    dim: 64
+    commitment_weight: 0.25
+
+# Clustering Configuration
+clustering:
+  method: "kmeans"          # kmeans, gmm, spectral
+  n_clusters: 12            # Number of behavioral motifs
+  min_support: 0.005        # Minimum cluster support (0.5%)
+  
+  # K-means specific
+  kmeans:
+    n_init: 10
+    max_iter: 300
+    
+  # GMM specific
+  gmm:
+    covariance_type: "diag"
+    n_init: 5
+
+# Temporal Smoothing Configuration
+smoothing:
+  window: 7                 # Median filter window
+  min_duration: 3           # Minimum motif duration (frames)
+  
+  # Transition penalties
+  transition_penalty: 0.1
+  
+  # Filtering passes
+  n_passes: 2
+
+# Evaluation Configuration
+evaluation:
+  metrics: "all"            # all, basic, extended
+  
+  # Calibration settings
+  calibration:
+    n_bins: 10
+    compute_ece: true
+    compute_brier: true
+  
+  # Behavioral analysis
+  behavioral:
+    compute_transitions: true
+    compute_durations: true
+    compute_entropy: true
+    compute_mutual_info: true
+
+# Deployment Configuration
+deployment:
+  format: "onnx"            # onnx, coreml, hailo
+  compress: true
+  
+  # ONNX settings
+  onnx:
+    opset_version: 14
+    optimize: true
+    
+  # CoreML settings
+  coreml:
+    minimum_ios: 15
+    compute_units: "all"   # cpu, gpu, neural_engine, all
+    
+  # Hailo settings
+  hailo:
+    target_device: "hailo8"
+    optimization_level: 3
+    batch_size: 1
+
+# QA Gate Thresholds
+qa_gates:
+  # Model convergence
+  convergence:
+    min_accuracy: 0.60
+    min_f1: 0.55
+    max_loss: 2.0
+    
+  # Calibration
+  calibration:
+    max_ece: 0.10
+    max_brier: 0.25
+    min_coverage: 0.95
+    
+  # Behavioral metrics
+  behavioral:
+    min_motif_coverage: 0.90
+    max_transition_rate: 0.5
+    min_dwell_frames: 10
+    max_perplexity: 10.0
+    
+  # Deployment readiness
+  deployment:
+    max_model_size_mb: 10
+    max_inference_ms: 100

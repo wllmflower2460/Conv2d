@@ -126,7 +126,7 @@ class VectorizedOperations:
     def estimate_mutual_information_vectorized(x: torch.Tensor, y: torch.Tensor, 
                                               n_bins: int = 10) -> torch.Tensor:
         """
-        Vectorized mutual information estimation.
+        Vectorized mutual information estimation with robust handling.
         Replaces loop in kinematic_features.py
         
         Args:
@@ -139,38 +139,60 @@ class VectorizedOperations:
         B = x.shape[0]
         mi_values = torch.zeros(B, device=x.device)
         
-        # Process in batches if memory allows
-        # For large batches, we still loop but use vectorized operations within
+        # Compute consistent bin edges across all batches for comparability
+        # This ensures all MI values use the same discretization
+        x_min, x_max = x.min().item(), x.max().item()
+        y_min, y_max = y.min().item(), y.max().item()
+        
+        # Add small margin to avoid edge effects
+        margin = 1e-10
+        x_edges = torch.linspace(x_min - margin, x_max + margin, n_bins + 1, device=x.device)
+        y_edges = torch.linspace(y_min - margin, y_max + margin, n_bins + 1, device=y.device)
+        
+        # Process each batch with consistent binning
         for b in range(B):
             x_flat = x[b].flatten()
             y_flat = y[b].flatten()
             
-            # Use torch.histogramdd for 2D histogram (vectorized)
+            # Use consistent bin edges for all batches
             hist, edges = torch.histogramdd(
                 torch.stack([x_flat, y_flat], dim=1),
-                bins=n_bins
+                bins=[x_edges, y_edges]
             )
             
             # Normalize to get joint probability
-            hist = hist / hist.sum()
+            total = hist.sum()
+            if total == 0:
+                # Handle empty histogram case
+                mi_values[b] = 0.0
+                continue
+                
+            p_xy = hist / total
             
             # Marginal probabilities
-            p_x = hist.sum(dim=1)
-            p_y = hist.sum(dim=0)
+            p_x = p_xy.sum(dim=1, keepdim=True)
+            p_y = p_xy.sum(dim=0, keepdim=True)
             
-            # Compute MI using vectorized operations
-            # MI = sum(p_xy * log(p_xy / (p_x * p_y)))
-            p_x_expanded = p_x.unsqueeze(1)
-            p_y_expanded = p_y.unsqueeze(0)
-            p_xy_indep = p_x_expanded * p_y_expanded
+            # Compute MI with safe logarithm
+            # MI = sum(p_xy * log(p_xy / (p_x * p_y))) where p_xy > 0
+            p_xy_indep = p_x * p_y
             
-            # Avoid log(0) with small epsilon
-            eps = 1e-10
-            hist_safe = hist + eps
-            p_xy_indep_safe = p_xy_indep + eps
+            # Safe MI computation: only compute where p_xy > 0
+            # This avoids log(0) and handles zero bins properly
+            nonzero_mask = p_xy > 0
             
-            mi = (hist * torch.log(hist_safe / p_xy_indep_safe)).sum()
-            mi_values[b] = mi
+            if nonzero_mask.any():
+                # Compute MI only for non-zero joint probabilities
+                # Use torch.where to avoid NaN/inf from log(0)
+                log_ratio = torch.where(
+                    nonzero_mask,
+                    torch.log(p_xy / (p_xy_indep + 1e-20)),  # Add eps to denominator only
+                    torch.zeros_like(p_xy)  # Zero contribution where p_xy = 0
+                )
+                mi = (p_xy * log_ratio).sum()
+                mi_values[b] = torch.clamp(mi, min=0.0)  # MI should be non-negative
+            else:
+                mi_values[b] = 0.0
             
         return mi_values
     
@@ -272,13 +294,18 @@ class VectorizedOperations:
         stride_channels = data.strides[1] if len(data.shape) > 1 else 0
         
         # Create view with sliding windows (no data copying!)
+        # WARNING: as_strided creates a view - DO NOT MODIFY!
+        # The view shares memory with original data and can cause undefined behavior if mutated
         windows = as_strided(
             data,
             shape=(n_windows, window_size, n_channels),
-            strides=(stride_samples * step_size, stride_samples, stride_channels)
+            strides=(stride_samples * step_size, stride_samples, stride_channels),
+            writeable=False  # Make read-only to prevent accidental mutations
         )
         
-        # Return a copy to avoid stride tricks issues
+        # IMPORTANT: Return a copy to ensure safety
+        # This prevents any downstream modifications from corrupting the original data
+        # The copy overhead is worth the safety guarantee
         return windows.copy()
 
 

@@ -1,0 +1,94 @@
+# Conv2d-FSQ-HSMM model configuration
+# @package model
+
+name: conv2d_fsq_hsmm
+architecture: integrated
+
+# Conv2d encoder
+encoder:
+  type: conv2d
+  input_channels: 9  # IMU: 3 accel + 3 gyro + 3 mag
+  hidden_channels: [32, 64, 128]
+  kernel_sizes: [3, 3, 3]
+  strides: [1, 1, 1]
+  activation: relu
+  batch_norm: true
+  dropout: 0.1
+
+# FSQ quantization
+fsq:
+  levels: [8, 6, 5]  # 240 codes
+  embedding_dim: 64
+  commitment_weight: 0.25
+  
+  # Codebook learning
+  codebook:
+    init_method: uniform  # uniform, normal, kmeans
+    update_method: ema
+    ema_decay: 0.99
+    epsilon: 1e-5
+    
+# HSMM temporal model  
+hsmm:
+  num_states: 32
+  observation_dim: ${model.fsq.embedding_dim}
+  
+  # Duration modeling
+  duration:
+    type: negative_binomial  # negative_binomial, poisson, gaussian
+    min_duration: 1
+    max_duration: 50
+    
+  # Transition modeling
+  transition:
+    type: mlp  # mlp, linear, fixed
+    hidden_dims: [128, 64]
+    input_dependent: true
+    
+  # Emission modeling
+  emission:
+    type: gaussian
+    diagonal_covariance: true
+    
+# Decoder
+decoder:
+  type: conv2d_transpose
+  hidden_channels: [128, 64, 32]
+  kernel_sizes: [3, 3, 3]
+  strides: [1, 1, 1]
+  output_channels: ${model.encoder.input_channels}
+  activation: relu
+  batch_norm: true
+  
+# Additional heads
+heads:
+  classification:
+    enabled: true
+    num_classes: null  # Set by dataset
+    hidden_dim: 256
+    dropout: 0.2
+    
+  regression:
+    enabled: false
+    output_dim: null
+    
+# Loss configuration
+loss:
+  reconstruction:
+    type: mse
+    weight: 1.0
+    
+  quantization:
+    type: commitment
+    weight: 0.25
+    
+  hsmm:
+    type: negative_log_likelihood
+    weight: 1.0
+    
+  entropy:
+    type: shannon
+    weight: 0.1
+    target_entropy: 2.0
+    
+  total_weight_sum: 2.35  # For normalization

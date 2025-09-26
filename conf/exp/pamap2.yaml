@@ -1,0 +1,62 @@
+# PAMAP2 Physical Activity Monitoring experiment
+# @package _global_
+
+defaults:
+  - override /model: conv2d_fsq_hsmm
+  - override /training: standard
+
+experiment:
+  name: pamap2_activity
+  tags: [pamap2, activity, imu]
+  notes: "Physical activity monitoring with full IMU data"
+
+data:
+  dataset_name: pamap2
+  dataset_path: ${paths.data_dir}/pamap2
+  
+  # PAMAP2-specific settings
+  num_activities: 12
+  sensors: [accelerometer, gyroscope, magnetometer]
+  num_axes: 9  # 3x3 for IMU
+  sensor_locations: [hand, chest, ankle]
+  
+  preprocessing:
+    window_size: 100
+    step_size: 50
+    sampling_rate: 100.0
+    normalize: true
+    remove_null_class: true
+    
+  # Handle missing data
+  quality:
+    nan_strategy: interpolate
+    nan_threshold_warn: 10.0  # PAMAP2 has some missing data
+    
+model:
+  # Richer FSQ for complex activities
+  fsq_levels: [8, 8, 6]  # 384 codes
+  embedding_dim: 128
+  
+  # Complex HSMM for activities
+  hsmm:
+    num_states: 48
+    duration_type: negative_binomial
+    
+training:
+  epochs: 150
+  batch_size: 32
+  
+  optimization:
+    learning_rate: 3e-4
+    weight_decay: 5e-4
+    
+# PAMAP2-specific metrics
+metrics:
+  activity:
+    - per_activity_f1
+    - activity_transition_matrix
+    - sensor_contribution_scores
+  standard:
+    - accuracy
+    - macro_f1
+    - weighted_f1

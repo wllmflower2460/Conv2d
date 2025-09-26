@@ -361,10 +361,15 @@ class DataQualityHandler:
         Returns:
             Interpolated data with same shape and dtype as input
         """
-        if len(data.shape) != 3:  # Early return if not 3D
+        # Guard rails: shape and dimension checks
+        if len(data.shape) != 3:
+            logger.debug(f"_interpolate_nan: returning early, shape rank={len(data.shape)}, expected 3")
             return data
             
         B, C, T = data.shape
+        if T <= 1:
+            logger.debug(f"_interpolate_nan: returning early, T={T} <= 1")
+            return data
         original_dtype = data.dtype
         
         # Ensure float32 for consistency with Torch/Hailo
@@ -374,6 +379,9 @@ class DataQualityHandler:
         all_nan_count = 0
         edge_nan_count = 0
         interpolated_count = 0
+        num_rows_mean_fallback = 0
+        num_rows_all_nan_zero = 0
+        gap_sizes = []  # Track gap sizes for histogram
         
         # Reshape to (B*C, T) for batch processing
         data_reshaped = data.reshape(-1, T)
@@ -395,6 +403,7 @@ class DataQualityHandler:
                 all_nan_count += 1
                 if nan_fallback == 'zero':
                     data_reshaped[idx] = 0.0
+                    num_rows_all_nan_zero += 1
                 elif nan_fallback == 'median':
                     # Use median from other samples in same channel if available
                     channel_idx = idx % C
@@ -407,10 +416,20 @@ class DataQualityHandler:
                     channel_data = data[:, channel_idx, :].flatten()
                     channel_mean = np.nanmean(channel_data)
                     data_reshaped[idx] = channel_mean if not np.isnan(channel_mean) else 0.0
+                    num_rows_mean_fallback += 1
                 else:
                     data_reshaped[idx] = 0.0
                     
             elif n_valid >= 2:
+                # Track gap sizes (consecutive NaNs)
+                if np.any(nan_mask):
+                    # Find consecutive NaN regions
+                    nan_diff = np.diff(np.concatenate(([False], nan_mask, [False])).astype(int))
+                    gap_starts = np.where(nan_diff == 1)[0]
+                    gap_ends = np.where(nan_diff == -1)[0]
+                    for start, end in zip(gap_starts, gap_ends):
+                        gap_sizes.append(end - start)
+                
                 # Check for edge NaNs
                 if nan_mask[0] or nan_mask[-1]:
                     edge_nan_count += 1
@@ -465,10 +484,26 @@ class DataQualityHandler:
         data = data.astype(original_dtype if original_dtype in [np.float32, np.float16] 
                            else np.float32, copy=False)
         
-        # Log QA statistics if any interpolation occurred
-        if all_nan_count > 0 or interpolated_count > 0:
-            logger.debug(f"NaN interpolation stats: all_nan={all_nan_count}, "
-                        f"edge_nan={edge_nan_count}, interpolated={interpolated_count}, "
+        # Log detailed statistics
+        logger.info(f"NaN interpolation counts: "
+                   f"num_rows_interpolated={interpolated_count}, "
+                   f"num_rows_mean_fallback={num_rows_mean_fallback}, "
+                   f"num_rows_all_nan_zero={num_rows_all_nan_zero}")
+        
+        # Log gap size histogram if we had gaps
+        if gap_sizes:
+            # Create bins up to T, ensuring monotonic increase
+            bins = [1, 2, 5, 10, 20, 50, 100]
+            bins = [b for b in bins if b < T] + [T]
+            if len(bins) > 1:
+                gap_hist, gap_bins = np.histogram(gap_sizes, bins=bins)
+                bin_labels = [f"{bins[i]}-{bins[i+1]}" for i in range(len(bins)-1)]
+                gap_info = ", ".join([f"{label}:{count}" for label, count in zip(bin_labels, gap_hist) if count > 0])
+                if gap_info:
+                    logger.info(f"Gap size histogram (sensor dropouts): {gap_info}")
+        
+        if all_nan_count > 0 or edge_nan_count > 0:
+            logger.debug(f"Additional stats: all_nan={all_nan_count}, edge_nan={edge_nan_count}, "
                         f"fallback={nan_fallback}, edge_method={edge_method}")
         
         return data

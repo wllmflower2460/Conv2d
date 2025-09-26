@@ -1,0 +1,74 @@
+# Experiment configuration for dog behavioral analysis
+name: dogs_behavioral_analysis
+version: 1.0
+
+model:
+  name: conv2d_fsq
+  architecture:
+    encoder: conv2d
+    quantization:
+      type: fsq
+      levels: [8, 6, 5]
+      embedding_dim: 64
+    clustering:
+      type: gmm
+      min_clusters: 3
+      max_clusters: 10
+      min_support: 0.05
+    temporal:
+      type: median
+      min_dwell: 5
+      window_size: 7
+      enter_threshold: 0.7
+      exit_threshold: 0.3
+
+data:
+  name: quadruped_imu
+  path: /mnt/ssd/Conv2d_Datasets/quadruped
+  sampling_rate: 100
+  window_size: 100
+  step_size: 50
+  sensors: 2
+  channels: 9
+  preprocessing:
+    standardize: true
+    interpolate_nan: true
+    clip_range: [-5, 5]
+
+training:
+  epochs: 100
+  batch_size: 32
+  learning_rate: 0.001
+  optimizer: adam
+  scheduler:
+    type: cosine
+    warmup_epochs: 5
+  early_stopping:
+    patience: 10
+    min_delta: 0.001
+
+evaluation:
+  metrics:
+    - accuracy
+    - macro_f1
+    - per_class_f1
+    - ece
+    - mce
+    - coverage
+    - motif_count
+    - code_usage_percent
+    - perplexity
+  calibration:
+    n_bins: 10
+    plot_reliability: true
+  qa_checks:
+    check_nan: true
+    check_inf: true
+    check_outliers: true
+    outlier_threshold: 5
+
+output:
+  save_predictions: false
+  save_embeddings: true
+  generate_plots: true
+  bundle_format: standard

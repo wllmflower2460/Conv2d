@@ -1,0 +1,61 @@
+# WISDM Human Activity Recognition experiment
+# @package _global_
+
+defaults:
+  - override /model: conv2d_fsq_hsmm
+  - override /training: fast
+
+experiment:
+  name: wisdm_har
+  tags: [wisdm, har, human_activity]
+  notes: "Human activity recognition on WISDM dataset"
+
+data:
+  dataset_name: wisdm
+  dataset_path: ${paths.data_dir}/wisdm
+  
+  # WISDM-specific settings
+  num_activities: 6  # Walking, Jogging, Upstairs, Downstairs, Sitting, Standing
+  sensors: [accelerometer]
+  num_axes: 3  # x, y, z
+  
+  preprocessing:
+    window_size: 128
+    step_size: 64
+    sampling_rate: 20.0  # WISDM is 20Hz
+    normalize: true
+    
+  # Data augmentation for HAR
+  augmentation:
+    enabled: true
+    noise_std: 0.05
+    rotation_range: 15
+    time_warp: 0.2
+    
+model:
+  # Simpler FSQ for HAR
+  fsq_levels: [4, 4, 4]  # 64 codes for activities
+  embedding_dim: 32
+  
+  # Simpler HSMM for activities
+  hsmm:
+    num_states: 16
+    duration_type: poisson
+    
+training:
+  epochs: 100
+  batch_size: 64
+  
+  optimization:
+    learning_rate: 1e-3
+    
+# HAR-specific metrics
+metrics:
+  activity:
+    - per_class_accuracy
+    - transition_accuracy
+    - activity_duration_mae
+  standard:
+    - accuracy
+    - f1_score
+    - confusion_matrix

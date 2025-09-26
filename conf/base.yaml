@@ -1,0 +1,132 @@
+# Base configuration - Single source of truth
+# @package _global_
+
+defaults:
+  - _self_
+  - env: local  # Can override with gpu, pi, hailo
+  - model: conv2d_fsq_hsmm
+  - training: standard
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+
+# Project metadata
+project:
+  name: Conv2d-FSQ-HSMM
+  version: 0.2.0
+  description: Behavioral synchrony analysis framework
+  seed: 42
+  
+# Paths configuration
+paths:
+  root_dir: ${oc.env:PROJECT_ROOT,${hydra:runtime.cwd}}
+  data_dir: ${paths.root_dir}/data
+  models_dir: ${paths.root_dir}/models
+  output_dir: ${paths.root_dir}/outputs
+  log_dir: ${paths.output_dir}/logs
+  checkpoint_dir: ${paths.output_dir}/checkpoints
+  tensorboard_dir: ${paths.output_dir}/tensorboard
+  
+# Data configuration
+data:
+  dataset_name: quadruped  # Can be overridden by exp configs
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2
+  
+  # Data preprocessing
+  preprocessing:
+    window_size: 100
+    step_size: 50
+    sampling_rate: 100.0
+    
+  # Data quality
+  quality:
+    nan_strategy: interpolate
+    nan_threshold_warn: 5.0
+    nan_threshold_error: 20.0
+    edge_method: constant
+    nan_fallback: median
+    
+  # Data augmentation
+  augmentation:
+    enabled: false
+    noise_std: 0.01
+    time_warp: 0.1
+    magnitude_warp: 0.1
+    
+# Model configuration (overridden by model configs)
+model:
+  name: ${model.name}
+  
+# Training configuration (overridden by training configs)
+training:
+  epochs: ${training.epochs}
+  
+# Optimization
+optimization:
+  optimizer: adam
+  learning_rate: 1e-3
+  weight_decay: 1e-4
+  gradient_clip: 1.0
+  
+  # Learning rate schedule
+  scheduler:
+    type: cosine
+    warmup_epochs: 5
+    min_lr: 1e-6
+    
+# Evaluation
+evaluation:
+  eval_interval: 500
+  save_interval: 1000
+  log_interval: 100
+  early_stopping:
+    enabled: true
+    patience: 20
+    min_delta: 1e-4
+    mode: min
+    
+# Logging
+logging:
+  level: INFO
+  console: true
+  file: true
+  tensorboard: true
+  wandb:
+    enabled: false
+    project: conv2d-fsq-hsmm
+    entity: null
+    tags: []
+    
+# Hardware (overridden by env configs)
+hardware:
+  device: ${env.device}
+  mixed_precision: ${env.mixed_precision}
+  
+# Experiment tracking
+experiment:
+  name: ${hydra:job.name}
+  run_id: ${now:%Y-%m-%d_%H-%M-%S}
+  config_hash: null  # Computed at runtime
+  tags: []
+  notes: ""
+  
+# Hydra configuration
+hydra:
+  run:
+    dir: ${paths.output_dir}/${experiment.name}/${experiment.run_id}
+  sweep:
+    dir: ${paths.output_dir}/sweeps/${experiment.name}
+    subdir: ${hydra:job.num}
+  job:
+    chdir: true
+    config:
+      override_dirname:
+        kv_sep: '='
+        item_sep: ','
+        exclude_keys:
+          - hydra
+          - paths.output_dir
+          - experiment.run_id
