@@ -345,34 +345,132 @@ class DataQualityHandler:
             
         return data, inf_report
     
-    def _interpolate_nan(self, data: np.ndarray) -> np.ndarray:
+    def _interpolate_nan(self, data: np.ndarray, 
+                        nan_fallback: str = 'zero',
+                        edge_method: str = 'extrapolate') -> np.ndarray:
         """
         Interpolate NaN values in time series data.
         
         Optimized with vectorized operations for better performance.
+        
+        Args:
+            data: Input array of shape (B, C, T)
+            nan_fallback: Strategy for all-NaN rows ('zero', 'median', 'mean')
+            edge_method: How to handle edge NaNs ('extrapolate', 'constant', 'ffill')
+            
+        Returns:
+            Interpolated data with same shape and dtype as input
         """
-        if len(data.shape) == 3:  # (B, C, T)
-            B, C, T = data.shape
+        if len(data.shape) != 3:  # Early return if not 3D
+            return data
             
-            # Reshape to (B*C, T) for batch processing
-            data_reshaped = data.reshape(-1, T)
-            x = np.arange(T)
+        B, C, T = data.shape
+        original_dtype = data.dtype
+        
+        # Ensure float32 for consistency with Torch/Hailo
+        data = data.astype(np.float32, copy=True)
+        
+        # Track statistics for QA
+        all_nan_count = 0
+        edge_nan_count = 0
+        interpolated_count = 0
+        
+        # Reshape to (B*C, T) for batch processing
+        data_reshaped = data.reshape(-1, T)
+        x = np.arange(T, dtype=np.float32)
+        
+        # Process all channels at once (still need loop but fewer iterations)
+        for idx in range(data_reshaped.shape[0]):
+            signal = data_reshaped[idx]
+            nan_mask = np.isnan(signal)
             
-            # Process all channels at once (still need loop but fewer iterations)
-            for idx in range(data_reshaped.shape[0]):
-                signal = data_reshaped[idx]
-                if np.any(np.isnan(signal)):
-                    valid_mask = ~np.isnan(signal)
-                    if np.sum(valid_mask) >= 2:
-                        # Use numpy's interp (vectorized internally)
-                        data_reshaped[idx] = np.interp(x, x[valid_mask], signal[valid_mask])
-                    else:
-                        # Fall back to mean replacement
-                        mean_val = np.nanmean(signal) if not np.all(np.isnan(signal)) else 0
-                        data_reshaped[idx] = np.nan_to_num(signal, nan=mean_val)
+            if not np.any(nan_mask):
+                continue  # Skip rows without NaNs
+                
+            valid_mask = ~nan_mask
+            n_valid = np.sum(valid_mask)
             
-            # Reshape back to original dimensions
-            data = data_reshaped.reshape(B, C, T)
+            if n_valid == 0:
+                # All NaN case - apply fallback strategy
+                all_nan_count += 1
+                if nan_fallback == 'zero':
+                    data_reshaped[idx] = 0.0
+                elif nan_fallback == 'median':
+                    # Use median from other samples in same channel if available
+                    channel_idx = idx % C
+                    channel_data = data[:, channel_idx, :].flatten()
+                    channel_median = np.nanmedian(channel_data)
+                    data_reshaped[idx] = channel_median if not np.isnan(channel_median) else 0.0
+                elif nan_fallback == 'mean':
+                    # Similar to median but use mean
+                    channel_idx = idx % C
+                    channel_data = data[:, channel_idx, :].flatten()
+                    channel_mean = np.nanmean(channel_data)
+                    data_reshaped[idx] = channel_mean if not np.isnan(channel_mean) else 0.0
+                else:
+                    data_reshaped[idx] = 0.0
+                    
+            elif n_valid >= 2:
+                # Check for edge NaNs
+                if nan_mask[0] or nan_mask[-1]:
+                    edge_nan_count += 1
+                
+                # Interpolation based on edge method
+                if edge_method == 'extrapolate':
+                    # Default numpy.interp behavior - extrapolates at edges
+                    data_reshaped[idx] = np.interp(x, x[valid_mask], signal[valid_mask])
+                    
+                elif edge_method == 'constant':
+                    # Keep edge values constant (no extrapolation)
+                    interpolated = np.interp(x, x[valid_mask], signal[valid_mask])
+                    # Override edge extrapolations with nearest valid
+                    if nan_mask[0]:
+                        first_valid_idx = np.where(valid_mask)[0][0]
+                        interpolated[:first_valid_idx] = signal[first_valid_idx]
+                    if nan_mask[-1]:
+                        last_valid_idx = np.where(valid_mask)[0][-1]
+                        interpolated[last_valid_idx+1:] = signal[last_valid_idx]
+                    data_reshaped[idx] = interpolated
+                    
+                elif edge_method == 'ffill':
+                    # Forward fill at start, backward fill at end
+                    interpolated = signal.copy()
+                    # Interior interpolation
+                    interior_mask = nan_mask.copy()
+                    if nan_mask[0]:
+                        first_valid_idx = np.where(valid_mask)[0][0]
+                        interpolated[:first_valid_idx] = signal[first_valid_idx]
+                        interior_mask[:first_valid_idx] = False
+                    if nan_mask[-1]:
+                        last_valid_idx = np.where(valid_mask)[0][-1]
+                        interpolated[last_valid_idx+1:] = signal[last_valid_idx]
+                        interior_mask[last_valid_idx+1:] = False
+                    # Interpolate interior NaNs
+                    if np.any(interior_mask):
+                        interior_x = x[~interior_mask]
+                        interior_y = interpolated[~interior_mask]
+                        interpolated[interior_mask] = np.interp(x[interior_mask], interior_x, interior_y)
+                    data_reshaped[idx] = interpolated
+                    
+                interpolated_count += 1
+                
+            else:
+                # Only 1 valid point - use that value everywhere
+                data_reshaped[idx] = signal[valid_mask][0]
+        
+        # Reshape back to original dimensions
+        data = data_reshaped.reshape(B, C, T)
+        
+        # Ensure output dtype matches input (avoid float64 creep)
+        data = data.astype(original_dtype if original_dtype in [np.float32, np.float16] 
+                           else np.float32, copy=False)
+        
+        # Log QA statistics if any interpolation occurred
+        if all_nan_count > 0 or interpolated_count > 0:
+            logger.debug(f"NaN interpolation stats: all_nan={all_nan_count}, "
+                        f"edge_nan={edge_nan_count}, interpolated={interpolated_count}, "
+                        f"fallback={nan_fallback}, edge_method={edge_method}")
+        
         return data
     
     def _log_correction_summary(self, report: Dict):
