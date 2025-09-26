@@ -35,6 +35,7 @@ class FSQConfig:
     clustering_method: str = 'kmeans'
     min_support: float = 0.005
     temporal_smoothing: Dict = None
+    embedding_dim: Optional[int] = None  # Auto-determined if not specified
     
     def __post_init__(self):
         if self.temporal_smoothing is None:
@@ -45,14 +46,32 @@ class FSQConfig:
                 'min_dwell_ms': 300,
                 'sampling_rate': 50
             }
+        
+        # Auto-determine embedding dimension based on codebook size
+        if self.embedding_dim is None:
+            self.embedding_dim = self._auto_embedding_dim()
     
     @property
     def codebook_size(self):
         return np.prod(self.levels)
     
+    def _auto_embedding_dim(self):
+        """Auto-determine embedding dimension based on codebook size."""
+        size = self.codebook_size
+        if size <= 16:
+            return 32
+        elif size <= 64:
+            return 64
+        elif size <= 256:
+            return 128
+        else:
+            return 256
+    
     def to_dict(self):
         return {
             'levels': self.levels,
+            'codebook_size': self.codebook_size,
+            'embedding_dim': self.embedding_dim,
             'commitment_loss': self.commitment_loss,
             'window_size': self.window_size,
             'clustering': {
@@ -309,6 +328,25 @@ class FSQTuner:
         
         return ece / len(probabilities)
     
+    def _get_embedding_dim_for_codebook(self, codebook_size: int) -> int:
+        """
+        Determine appropriate embedding dimension based on codebook size.
+        
+        Args:
+            codebook_size: Number of codes in the FSQ codebook
+            
+        Returns:
+            Appropriate embedding dimension
+        """
+        if codebook_size <= 16:
+            return 32  # Small codebook, small embedding
+        elif codebook_size <= 64:
+            return 64  # Medium codebook, standard embedding
+        elif codebook_size <= 256:
+            return 128  # Large codebook, larger embedding
+        else:
+            return 256  # Very large codebook, maximum embedding
+    
     def auto_tune(self, data_samples: np.ndarray, 
                  target_metrics: Optional[Dict] = None) -> FSQConfig:
         """Automatically tune FSQ configuration."""
@@ -338,8 +376,12 @@ class FSQTuner:
         print("\nStep 3: Finding optimal clustering...")
         
         # Simulate FSQ codes for demonstration (in practice, use actual model output)
-        n_codes = min(np.prod(recommended_levels), 100)
-        simulated_fsq_codes = np.random.randn(len(data_samples), 64)
+        codebook_size = np.prod(recommended_levels)
+        n_codes = min(codebook_size, 100)
+        # Use actual codebook embedding dimension (should come from model config)
+        # Default embedding dimension based on typical FSQ configurations
+        embedding_dim = self._get_embedding_dim_for_codebook(codebook_size)
+        simulated_fsq_codes = np.random.randn(len(data_samples), embedding_dim)
         
         clustering_results = self.find_optimal_clusters(
             simulated_fsq_codes, 
